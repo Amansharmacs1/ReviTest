@@ -80,8 +80,8 @@ The architecture is being designed to support organization-level data isolation 
 | Phase | Description | Status |
 |---|---|---|
 | 01 | Project Foundation | Completed |
-| 02 | Authentication & Multi-Tenancy | Upcoming |
-| 03 | Organization Dashboard & User Management | Planned |
+| 02 | Authentication & Multi-Tenancy | Completed |
+| 03 | Organization Dashboard & User Management | Upcoming |
 | 04 | Exam Creation & Question Management | Planned |
 | 05 | Exam Scheduling & Student Access | Planned |
 | 06 | Examination Engine | Planned |
@@ -162,27 +162,37 @@ The current local development services are:
 - Frontend: http://localhost:5173
 - Backend: http://localhost:5000
 
-### API Health Checks
+### Core API Endpoints
 
-```text
-GET /api/health
-GET /api/health/db
-```
+#### Infrastructure & Health
+- `GET /api/health` — API status, uptime, node version, memory metrics
+- `GET /api/health/db` — MongoDB driver status and ping latency
 
-## Current Phase: Phase 1 Completed
+#### Authentication (`/api/auth`)
+- `POST /api/auth/register-org` — Onboard new Organization & initial Org Admin
+- `POST /api/auth/register-candidate` — Self-register student/candidate into Organization
+- `POST /api/auth/login` — Sign in and issue short-lived JWT + HTTP-only refresh cookie
+- `POST /api/auth/refresh` — Issue new access token using secure refresh cookie
+- `POST /api/auth/logout` — Invalidate session and clear refresh cookie
+- `GET /api/auth/me` — Retrieve active user session and tenant profile (Authenticated)
 
-The initial foundation has been implemented and locally verified.
+#### Multi-Tenant Workspaces (`/api/tenants`)
+- `GET /api/tenants/public/:identifier` — Public tenant info by slug or code (Public)
+- `GET /api/tenants/current` — Current workspace profile and settings (Authenticated)
+- `PATCH /api/tenants/settings` — Update workspace settings (Org Admin only)
 
-- React + Vite frontend initialized.
-- Express backend configured.
-- MongoDB connectivity established.
-- Centralized API error handling.
-- Security middleware configured.
-- Frontend and backend communication verified.
-- Responsive landing page implemented.
-- ESLint and Prettier checks passed.
-- Production frontend build verified.
-- Architecture and development documentation created.
+## Current Phase: Phase 2 Completed
+
+Phase 1 (Project Foundation) and Phase 2 (Authentication & Multi-Tenancy) have been implemented and fully verified:
+
+- Multi-tenant `Organization` and `User` schemas with logical data isolation.
+- Password hashing using `bcryptjs` (salt rounds: 12).
+- JWT generation (15-minute access tokens) and HTTP-only secure refresh cookies (7 days).
+- Role-Based Access Control (`SUPER_ADMIN`, `ORG_ADMIN`, `PROCTOR`, `CANDIDATE`).
+- Tenant resolution middleware (`X-Tenant-Slug`, query/params, or JWT claims).
+- Client authentication store (`Zustand`) with Axios request/response interceptors.
+- Candidate registration, Organization onboarding, Sign-In, and Workspace Dashboard pages.
+- Automated test suite covering registration, login, token refresh, RBAC guards, and tenant scoping.
 
 **Note:** The planned concurrent-user capacity is a design target, not a benchmark result. Load testing will be performed in a later phase.
 

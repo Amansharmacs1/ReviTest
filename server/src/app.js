@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { env } from './config/environment.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
@@ -43,9 +44,10 @@ if (env.isDevelopment) {
   app.use(morgan('combined'));
 }
 
-// 4. Request Body Parsing
+// 4. Request Body & Cookie Parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser(env.cookie.secret));
 
 // 5. Global API Rate Limiting
 app.use('/api', apiRateLimiter);
