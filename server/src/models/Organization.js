@@ -121,3 +121,4 @@ organizationSchema.methods.toSafeObject = function () {
 
 export const Organization = mongoose.model('Organization', organizationSchema);
 export default Organization;
+

@@ -17,3 +17,4 @@ export const hasMinimumRole = (userRole, requiredRole) => {
   const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
   return userLevel >= requiredLevel;
 };
+
