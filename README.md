@@ -1,129 +1,114 @@
-# REVITEST — Multi-Tenant Online Examination & Assessment Management SaaS
+# REVITEST
 
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![React Version](https://img.shields.io/badge/react-18.x-blue.svg)](https://react.dev/)
-[![Express Version](https://img.shields.io/badge/express-4.x-lightgrey.svg)](https://expressjs.com/)
-[![MongoDB Version](https://img.shields.io/badge/mongodb-mongoose-green.svg)](https://mongoosejs.com/)
-[![Tailwind CSS](https://img.shields.io/badge/tailwindcss-3.x-38B2AC.svg)](https://tailwindcss.com/)
-[![Phase](https://img.shields.io/badge/phase-1%20Foundation%20Complete-blueviolet.svg)](#current-development-phase)
+### The Next Generation of Digital Assessments.
 
----
+REVITEST is a multi-tenant SaaS platform designed to simplify, manage, and modernize online examinations and digital assessments.
 
-## 1. Project Overview & Product Vision
-
-**REVITEST** is a production-oriented, multi-tenant online examination and assessment management SaaS platform. Unlike single-institution test portals, REVITEST is engineered from the ground up to serve diverse educational institutions and corporate organizations:
-
-- **Colleges and Universities**: High-volume semester midterms, finals, entrance exams, and departmental quizzes.
-- **Coaching Institutes**: Periodic mock tests, competitive exam prep (JEE, NEET, GATE, Civil Services), and live rank benchmarking.
-- **Enterprise Recruiters**: Technical aptitude assessments, candidate pre-screening, and timed hiring challenges.
-- **Certification Bodies**: Proctored certification evaluations with tamper-resistant audit trails.
-
-### Core Architectural Ambition
-- **Multi-Tenant Isolation**: Complete logical data partitioning, custom subdomain/branding workspaces, and organization-scoped role hierarchies.
-- **High Concurrency Scale**: Seamlessly handling **1,000+ simultaneous examination participants** submitting answers in synchronized timeframes without API thread locking or MongoDB connection exhaustion.
-- **State Recovery & Fault Tolerance**: Client-side offline buffering with automatic background recovery ensuring zero lost answers during unexpected network drops or device crashes.
-- **Proctoring Integrity**: Browser-level lockdown, tab-switching telemetry, copy-paste prevention, and anomaly auditing.
-- **Instant Auto-Evaluation**: Real-time MCQ scoring, percentile calculations, question difficulty analysis, and direct synchronization with Google Sheets.
+Built for colleges, universities, coaching institutes, and companies, REVITEST aims to provide a unified environment for creating examinations, managing candidates, conducting secure assessments, automating evaluation, and analyzing performance.
 
 ---
 
-## 2. Technology Stack
+## Overview
 
-### Frontend Client
-| Technology | Role |
+REVITEST is being developed as a scalable examination and assessment management ecosystem.
+
+The platform is designed around independent organizational workspaces, allowing multiple institutions and businesses to conduct assessments through a centralized platform while maintaining their own users, examinations, and results.
+
+### Target Organizations
+
+- Colleges and Universities
+- Coaching Institutes
+- Recruitment and HR Teams
+- Corporate Training Organizations
+- Independent Assessment Providers
+
+## Core Capabilities
+
+The planned platform includes:
+
+- **Multi-Tenant Architecture** — Independent workspaces and organization-level data isolation.
+- **User & Role Management** — Platform administrators, organization owners, faculty, and candidates.
+- **Exam Management** — Create, configure, schedule, and publish assessments.
+- **Question Management** — MCQ creation, question banks, randomized questions, and configurable marking schemes.
+- **Examination Engine** — Timers, question navigation, autosave, and attempt recovery.
+- **Exam Security** — Browser-based tab-switch and fullscreen violation monitoring.
+- **Automated Evaluation** — Automatic scoring and result generation.
+- **Analytics & Reports** — Performance insights, rankings, and downloadable reports.
+- **Integrations** — Google Sheets synchronization and future external integrations.
+
+## Technology Stack
+
+| Layer | Technology |
 |---|---|
-| **React 18** | Declarative component UI library |
-| **Vite** | Next-generation frontend build tool and dev server |
-| **Tailwind CSS** | Utility-first responsive styling framework |
-| **React Router DOM v6** | Declarative client-side routing |
-| **Axios** | Pre-configured HTTP client with interceptors |
-| **Zustand** | Lightweight reactive state store for system telemetry |
-| **Lucide React** | Enterprise-grade iconography |
+| Frontend | React.js, Vite |
+| Styling | Tailwind CSS |
+| State Management | Zustand |
+| Routing | React Router |
+| HTTP Client | Axios |
+| Backend | Node.js, Express.js |
+| Database | MongoDB, Mongoose |
+| Security | Helmet, CORS, Rate Limiting |
+| Authentication | JWT (planned) |
+| Background Jobs | Redis, BullMQ (planned) |
+| Testing | ESLint, API Testing, k6 (planned) |
 
-### Backend API Server
-| Technology | Role |
-|---|---|
-| **Node.js (v18+)** | High-performance asynchronous runtime |
-| **Express.js** | Modular REST API framework (using native ES Modules) |
-| **MongoDB & Mongoose** | NoSQL document persistence with schema enforcement |
-| **Helmet** | HTTP security headers |
-| **CORS** | Configurable Cross-Origin Resource Sharing |
-| **Morgan** | Structured HTTP request logger |
-| **express-rate-limit** | IP-based request throttling against brute force/DDoS |
-| **dotenv** | Environment configuration management |
+## Architecture
 
-### Development & Tooling
-- **npm**: Package management and monorepo workspace orchestration
-- **Nodemon**: Hot-reloading backend development server
-- **ESLint**: Static code analysis and syntax enforcement
-- **Prettier**: Code formatting
-
----
-
-## 3. Project Structure
+REVITEST follows a modular monolithic architecture with separate frontend and backend applications.
 
 ```text
 REVITEST/
 │
-├── client/                     # Frontend Vite + React application
-│   ├── public/                 # Static public assets (favicons, etc.)
-│   ├── src/
-│   │   ├── assets/             # Images, static media
-│   │   ├── components/
-│   │   │   ├── common/         # Reusable UI primitives (Button, Badge, Card, SystemHealthCard)
-│   │   │   └── layout/         # Structural components (Navbar, Footer, MainLayout)
-│   │   ├── pages/              # Route views (HomePage, NotFoundPage)
-│   │   ├── routes/             # AppRoutes configuration
-│   │   ├── services/           # Axios HTTP client and domain services (apiClient, healthService)
-│   │   ├── hooks/              # Reusable React hooks
-│   │   ├── store/              # Zustand global state (systemStore)
-│   │   ├── utils/              # Client utility functions
-│   │   ├── constants/          # Static UI constants, nav links, capability metadata
-│   │   ├── App.jsx             # Top-level Router container
-│   │   ├── main.jsx            # React DOM mounting point
-│   │   └── index.css           # Tailwind base styles and theme layer
-│   ├── .env                    # Local client environment (ignored by Git)
-│   ├── .env.example            # Client environment blueprint
-│   ├── eslint.config.js        # ESLint flat config for client
-│   ├── tailwind.config.js      # Custom theme, colors, typography, shadows
-│   ├── vite.config.js          # Vite build and path alias configuration
-│   └── package.json            # Client dependencies and scripts
+├── client/
+│   └── React + Vite Application
 │
-├── server/                     # Backend Node.js + Express API
-│   ├── src/
-│   │   ├── config/
-│   │   │   ├── database.js     # Mongoose connection pool manager with event listeners
-│   │   │   └── environment.js  # Centralized environment validator and typed config
-│   │   ├── controllers/        # Request controllers (health.controller.js)
-│   │   ├── models/             # Schema definitions (reserved for Phase 2+)
-│   │   ├── routes/             # Route routers (health.routes.js, index.js)
-│   │   ├── middleware/         # Security, rate limiting, 404, and error handling
-│   │   ├── services/           # Business domain services (reserved for Phase 2+)
-│   │   ├── utils/              # API response wrapper, logger, asyncHandler
-│   │   ├── constants/          # HTTP status codes, standard messages
-│   │   ├── jobs/               # Background cron workers (reserved for Phase 2+)
-│   │   ├── app.js              # Express app declaration and middleware assembly
-│   │   └── server.js           # Server entry point with DB-first lifecycle and graceful shutdown
-│   ├── .env                    # Local server environment (ignored by Git)
-│   ├── .env.example            # Server environment blueprint
-│   ├── eslint.config.js        # ESLint flat config for server
-│   └── package.json            # Server dependencies and scripts
+├── server/
+│   └── Express + Node.js API
 │
-├── docs/                       # Technical Documentation
-│   ├── ARCHITECTURE.md         # Architectural blueprint and concurrency design
-│   └── DEVELOPMENT.md          # Setup instructions and coding standards
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── DEVELOPMENT.md
 │
-├── .gitignore                  # Git exclusion rules
-├── README.md                   # Project overview and quick start guide
-└── package.json                # Root orchestration package
+├── README.md
+└── package.json
 ```
 
----
+The architecture is being designed to support organization-level data isolation and future horizontal scaling.
 
-## 4. Environment Configuration
+## Development Progress
 
-### Backend (`server/.env`)
-Create `server/.env` based on `server/.env.example`:
+| Phase | Description | Status |
+|---|---|---|
+| 01 | Project Foundation | Completed |
+| 02 | Authentication & Multi-Tenancy | Upcoming |
+| 03 | Organization Dashboard & User Management | Planned |
+| 04 | Exam Creation & Question Management | Planned |
+| 05 | Exam Scheduling & Student Access | Planned |
+| 06 | Examination Engine | Planned |
+| 07 | Proctoring & Examination Security | Planned |
+| 08 | Evaluation, Results & Analytics | Planned |
+| 09 | Integrations & SaaS Management | Planned |
+| 10 | Performance, Security & Deployment | Planned |
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18+)
+- npm (v9+)
+- MongoDB
+- Git
+
+### Clone Repository
+
+```bash
+git clone https://github.com/Amansharmacs1/ReviTest.git
+cd ReviTest
+```
+
+### Environment Configuration
+
+Configure the backend environment variables in `server/.env`:
 
 ```env
 PORT=5000
@@ -132,168 +117,81 @@ MONGODB_URI=mongodb://127.0.0.1:27017/revitest
 CLIENT_URL=http://localhost:5173
 ```
 
-### Frontend (`client/.env`)
-Create `client/.env` based on `client/.env.example`:
+Configure the frontend environment variables in `client/.env`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api
 ```
 
-> **Security Note**: All `.env` files are strictly excluded from version control in `.gitignore`. Never commit secrets or connection strings.
+Never commit actual environment files or secrets.
 
----
+### Install Dependencies
 
-## 5. Installation & Setup
-
-### Prerequisites
-- **Node.js**: >= 18.0.0 (v20+ recommended)
-- **npm**: >= 9.0.0
-- **MongoDB**: Local MongoDB instance running on port `27017` (or MongoDB Atlas connection string)
-
-### Step 1: Clone Repository
 ```bash
-git clone <repository-url>
-cd REVITEST
+npm install
 ```
 
-### Step 2: Install Dependencies
-Install all root, backend, and frontend dependencies in one command:
+If the root package does not install workspace dependencies, install them separately:
+
 ```bash
-npm run install:all
+cd client && npm install
+cd ../server && npm install
 ```
-*(Or manually run `npm install` inside `/`, `/server`, and `/client`)*
 
----
+### Run Development Servers
 
-## 6. Running the Application
+Use the scripts configured in the respective package.json files:
 
-### Option A: Run Both Frontend and Backend Concurrently (Recommended)
-From the project root:
 ```bash
-npm run dev
-```
-- **Backend API**: Running on [http://localhost:5000](http://localhost:5000)
-- **Frontend App**: Running on [http://localhost:5173](http://localhost:5173)
-
-### Option B: Run Services Individually
-In Terminal 1 (Backend):
-```bash
-cd server
+# Run both client and server concurrently from root
 npm run dev
 ```
 
-In Terminal 2 (Frontend):
+Or run services individually:
+
 ```bash
-cd client
-npm run dev
+# Terminal 1: Backend API
+npm run dev:server
+
+# Terminal 2: Frontend Client
+npm run dev:client
 ```
 
-### Production Build
-```bash
-npm run build
-```
+The current local development services are:
 
----
+- Frontend: http://localhost:5173
+- Backend: http://localhost:5000
 
-## 7. API Documentation (Phase 1 Infrastructure Endpoints)
+### API Health Checks
 
-All endpoints return uniform JSON envelopes:
-
-### 1. General API Health
-```http
+```text
 GET /api/health
-```
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "REVITEST API engine is running smoothly",
-  "data": {
-    "application": "REVITEST",
-    "version": "1.0.0-phase1",
-    "status": "healthy",
-    "environment": "development",
-    "timestamp": "2026-11-17T06:30:00.000Z",
-    "uptime": "142s",
-    "process": {
-      "pid": 58210,
-      "nodeVersion": "v26.9.0",
-      "memory": {
-        "rss": "48MB",
-        "heapUsed": "24MB",
-        "heapTotal": "32MB"
-      }
-    }
-  }
-}
-```
-
-### 2. Database Connectivity Health
-```http
 GET /api/health/db
 ```
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "message": "Database connection is active and healthy",
-  "data": {
-    "application": "REVITEST",
-    "database": {
-      "connected": true,
-      "state": "connected",
-      "readyState": 1,
-      "host": "127.0.0.1",
-      "name": "revitest",
-      "pingMs": 2,
-      "timestamp": "2026-11-17T06:30:00.000Z"
-    }
-  }
-}
-```
 
-### Error Responses
-Uniform error format for 404, 429, and 500:
-```json
-{
-  "success": false,
-  "message": "The requested API route was not found on this server: GET /api/unknown",
-  "error": {
-    "code": "ROUTE_NOT_FOUND",
-    "path": "/api/unknown",
-    "method": "GET"
-  }
-}
-```
+## Current Phase: Phase 1 Completed
+
+The initial foundation has been implemented and locally verified.
+
+- React + Vite frontend initialized.
+- Express backend configured.
+- MongoDB connectivity established.
+- Centralized API error handling.
+- Security middleware configured.
+- Frontend and backend communication verified.
+- Responsive landing page implemented.
+- ESLint and Prettier checks passed.
+- Production frontend build verified.
+- Architecture and development documentation created.
+
+**Note:** The planned concurrent-user capacity is a design target, not a benchmark result. Load testing will be performed in a later phase.
+
+## Product Vision
+
+Our vision is to make digital assessments simpler, more reliable, and accessible to organizations of every size.
+
+REVITEST aims to evolve beyond a traditional examination portal into a complete assessment infrastructure.
 
 ---
 
-## 8. Current Development Phase
-
-| Phase | Title | Status | Scope |
-|---|---|---|---|
-| **Phase 1** | **Project Foundation** | **Completed** | Clean architecture, Express/Node.js ES Modules, MongoDB Mongoose connection manager, Vite React frontend, Tailwind design tokens, Health check telemetry, 404/Error middleware. |
-| **Phase 2** | Multi-Tenancy & RBAC Auth | Planned | Organization schema, User roles (SuperAdmin, OrgAdmin, Proctor, Student), JWT + HTTP-only cookies, Tenant resolution. |
-| **Phase 3** | Assessment & Question Engine | Planned | MCQ question bank, tagging, marking schemes, negative marking, randomized options. |
-| **Phase 4** | Live Exam Delivery & Proctoring | Planned | Real-time synchronized clock, client offline answer caching, full-screen lockdown, tab-switch anomaly detection. |
-| **Phase 5** | Evaluation, Analytics & Sheets Sync | Planned | Automated grading, leaderboards, percentile profiling, Google Sheets API bidirectional sync. |
-
----
-
-## 9. Design System & Tokens
-
-The application visual foundation follows a high-contrast, modern enterprise SaaS aesthetic:
-
-- **Deep Navy (`#0B1220`)**: Primary structural dark surfaces, typography headers, and footers.
-- **Primary Blue (`#2563EB`)**: High-intent interactive buttons, active indicators, and focus states.
-- **Electric Blue (`#3B82F6`)**: Accents, telemetry indicators, and hover states.
-- **Canvas Background (`#F8FAFC`)**: Soft slate canvas ensuring zero eye fatigue.
-- **Surface White (`#FFFFFF`)**: High-elevation cards with subtle borders (`#E2E8F0`).
-- **Body Text (`#111827`) & Muted (`#64748B`)**: Hierarchical typography for readouts and body text.
-
----
-
-## 10. License
-
-Proprietary © REVITEST. All rights reserved.
-
+**REVITEST — Assess Smarter. Perform Better.**
