@@ -296,4 +296,3 @@ export const RegisterCandidatePage = () => {
 };
 
 export default RegisterCandidatePage;
-

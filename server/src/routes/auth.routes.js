@@ -22,4 +22,3 @@ router.post('/logout', logout);
 router.get('/me', authenticate, getCurrentUser);
 
 export default router;
-

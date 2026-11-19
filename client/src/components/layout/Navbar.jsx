@@ -137,6 +137,18 @@ export const Navbar = () => {
                   </div>
                 </div>
 
+                {user?.role === 'SUPER_ADMIN' && (
+                  <Link to="/app/platform">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
+                    >
+                      Platform
+                    </Button>
+                  </Link>
+                )}
+
                 <Link to="/app/dashboard">
                   <Button
                     variant="primary"

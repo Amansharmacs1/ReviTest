@@ -68,6 +68,23 @@ const organizationSchema = new mongoose.Schema(
       lowercase: true,
       default: '',
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    website: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    address: {
+      street: { type: String, trim: true, default: '' },
+      city: { type: String, trim: true, default: '' },
+      state: { type: String, trim: true, default: '' },
+      country: { type: String, trim: true, default: '' },
+      zipCode: { type: String, trim: true, default: '' },
+    },
     settings: {
       allowSelfRegistration: {
         type: Boolean,
@@ -102,6 +119,9 @@ const organizationSchema = new mongoose.Schema(
   }
 );
 
+// Compound index for efficient platform queries
+organizationSchema.index({ status: 1, type: 1 });
+
 // Helper method to sanitize organization before sending to client
 organizationSchema.methods.toSafeObject = function () {
   const obj = this.toObject();
@@ -114,11 +134,18 @@ organizationSchema.methods.toSafeObject = function () {
     status: obj.status,
     plan: obj.plan,
     contactEmail: obj.contactEmail,
-    settings: obj.settings,
+    phone: obj.phone || '',
+    website: obj.website || '',
+    address: obj.address || {},
+    settings: {
+      ...obj.settings,
+      requireProctoringDefault: obj.settings?.requireProctoringByDefault,
+      defaultDurationMinutes: obj.settings?.defaultExamDurationMinutes,
+    },
     createdAt: obj.createdAt,
+    updatedAt: obj.updatedAt,
   };
 };
 
 export const Organization = mongoose.model('Organization', organizationSchema);
 export default Organization;
-

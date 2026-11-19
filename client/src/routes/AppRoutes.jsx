@@ -6,6 +6,7 @@ import LoginPage from '../pages/LoginPage';
 import RegisterOrgPage from '../pages/RegisterOrgPage';
 import RegisterCandidatePage from '../pages/RegisterCandidatePage';
 import DashboardPage from '../pages/DashboardPage';
+import PlatformDashboardPage from '../pages/PlatformDashboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
@@ -25,6 +26,14 @@ export const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="app/platform"
+          element={
+            <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+              <PlatformDashboardPage />
             </ProtectedRoute>
           }
         />

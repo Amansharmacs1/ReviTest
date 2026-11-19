@@ -131,3 +131,31 @@ In a standard web app, 1,000 active users generate dispersed traffic. In an **ex
 4. **Graceful Process Lifecycle**:
    - Clean handling of `SIGTERM` and `SIGINT` signals ensuring active HTTP transactions and MongoDB connections complete before node shutdown.
 
+---
+
+## 6. Phase 3 Architecture: Organization Workspace, RBAC & Audit Trails
+
+### 6.1 Tenant Authorization Authority
+All workspace operations under `/api/organization/*` enforce non-negotiable multi-tenant boundaries:
+- `req.user.organizationId` (extracted and verified from the validated JWT access token) serves as the authoritative boundary anchor.
+- Client headers or request payloads cannot override tenant boundaries for `ORG_ADMIN`, `PROCTOR`, or `CANDIDATE`.
+- Only `SUPER_ADMIN` accounts may query across tenants by providing explicit target parameters.
+
+### 6.2 Data Partitioning & Safe Projections
+- Queries are strictly indexed and compound-scoped: `{ organizationId: 1, role: 1, status: 1 }` and `{ organizationId: 1, createdAt: -1 }`.
+- Read operations omit sensitive fields via `.select('-password -tokenVersion')` and execute with `.lean()` for high read throughput.
+- Soft deactivation: Member deactivations increment `user.tokenVersion`, immediately invalidating active JWT session tokens.
+- Self-deactivation prevention: Administrators are prohibited from modifying their own account status to prevent locking workspaces.
+- Protected Organization Fields: Immutable fields (`_id`, `slug`, `code`, `status`, `plan`) are strictly stripped from update payloads.
+
+### 6.3 Audit Logging Engine
+The `AuditLog` collection records all critical workspace events:
+- Indexed by `{ organizationId: 1, createdAt: -1 }` and `{ actorId: 1, createdAt: -1 }`.
+- Tracks: `actorId`, `actorRole`, `actorName`, `action`, `targetType`, `targetId`, `targetName`, `description`, `metadata`, `ipAddress`, and `userAgent`.
+- Captures operations including: `USER_ACTIVATED`, `USER_DEACTIVATED`, `PROCTOR_CREATED`, `ORG_PROFILE_UPDATED`, `ORG_SUSPENDED`, and `ORG_REACTIVATED`.
+
+### 6.4 Platform Super Administration
+- Accessible only to accounts with role `SUPER_ADMIN`.
+- Route `/app/platform` and `/api/platform/*` provide global multi-tenant visibility, organization search, aggregated user counts, and instantaneous workspace suspension/reactivation.
+- Organization suspension immediately blocks all tenant members across all `/api/organization/*` routes via route-level verification middleware.
+

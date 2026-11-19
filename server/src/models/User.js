@@ -85,6 +85,10 @@ const userSchema = new mongoose.Schema(
 // Compound index to guarantee email uniqueness within an organization
 userSchema.index({ email: 1, organizationId: 1 }, { unique: true });
 
+// Performance indexes for organization-scoped member filtering, search, and sorting
+userSchema.index({ organizationId: 1, role: 1, status: 1 });
+userSchema.index({ organizationId: 1, createdAt: -1 });
+
 // Pre-save password hashing
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
@@ -115,4 +119,3 @@ userSchema.methods.toSafeObject = function () {
 
 export const User = mongoose.model('User', userSchema);
 export default User;
-

@@ -131,3 +131,15 @@ Follow Conventional Commits:
 - `docs: update architecture concurrency notes`
 - `refactor: extract status badge to common component`
 
+---
+
+## 6. Multi-Tenant Testing & RBAC Verification Rules
+
+When developing endpoints for organization workspaces:
+1. **Never Trust Client Tenant Identifiers**: Always derive the tenant context from `req.user.organizationId` on the backend.
+2. **Always Verify Cross-Tenant Isolation**: Ensure that testing includes requests from Organization A attempting to read or mutate Organization B's records, asserting HTTP 404 or 403.
+3. **Always Verify Role Boundaries**: Ensure candidate roles cannot access admin routes (`/api/organization/*` and `/api/platform/*`).
+4. **Prevent Self-Lockout**: Never allow administrators to change their own role or deactivate their own account.
+5. **Protect Sensitive Fields**: Ensure `.select('-password -tokenVersion')` is applied on all user queries.
+6. **Log All State Transitions**: Ensure `logAuditEvent` is called on all status updates, creations, and profile modifications.
+

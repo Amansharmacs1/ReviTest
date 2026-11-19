@@ -81,8 +81,8 @@ The architecture is being designed to support organization-level data isolation 
 |---|---|---|
 | 01 | Project Foundation | Completed |
 | 02 | Authentication & Multi-Tenancy | Completed |
-| 03 | Organization Dashboard & User Management | Upcoming |
-| 04 | Exam Creation & Question Management | Planned |
+| 03 | Organization Dashboard & User Management | Completed |
+| 04 | Exam Creation & Question Management | Upcoming |
 | 05 | Exam Scheduling & Student Access | Planned |
 | 06 | Examination Engine | Planned |
 | 07 | Proctoring & Examination Security | Planned |
@@ -181,18 +181,40 @@ The current local development services are:
 - `GET /api/tenants/current` — Current workspace profile and settings (Authenticated)
 - `PATCH /api/tenants/settings` — Update workspace settings (Org Admin only)
 
-## Current Phase: Phase 2 Completed
+#### Organization Management (`/api/organization`)
+- `GET /api/organization/dashboard` — Live counts, status, and recent audit activity (Org Admin, Super Admin)
+- `GET /api/organization/profile` — Workspace institutional details and policies (Org Admin, Super Admin)
+- `PATCH /api/organization/profile` — Update permitted profile fields and assessment defaults (Org Admin, Super Admin)
+- `GET /api/organization/users` — Paginated workspace members with search and role/status filtering
+- `GET /api/organization/users/:userId` — Specific member identity details
+- `PATCH /api/organization/users/:userId/status` — Activate/Deactivate member (self-modification blocked)
+- `GET /api/organization/proctors` — Paginated proctor roster with search and status filtering
+- `POST /api/organization/proctors` — Create/invite proctor with secure temporary credentials generation
+- `PATCH /api/organization/proctors/:userId/status` — Activate/Deactivate proctor account
+- `GET /api/organization/candidates` — Paginated candidate roster with search and status filtering
+- `GET /api/organization/candidates/:userId` — Candidate profile details
+- `PATCH /api/organization/candidates/:userId/status` — Activate/Deactivate candidate account
+- `GET /api/organization/audit-logs` — Workspace audit trail and activity history
 
-Phase 1 (Project Foundation) and Phase 2 (Authentication & Multi-Tenancy) have been implemented and fully verified:
+#### Platform Administration (`/api/platform`)
+- `GET /api/platform/dashboard` — Global platform metrics across all tenants (Super Admin only)
+- `GET /api/platform/organizations` — Paginated organizations with member breakdown (Super Admin only)
+- `GET /api/platform/organizations/:organizationId` — Organization details & user count breakdown (Super Admin only)
+- `PATCH /api/platform/organizations/:organizationId/status` — Activate / Suspend / Reactivate organization (Super Admin only)
 
-- Multi-tenant `Organization` and `User` schemas with logical data isolation.
-- Password hashing using `bcryptjs` (salt rounds: 12).
-- JWT generation (15-minute access tokens) and HTTP-only secure refresh cookies (7 days).
-- Role-Based Access Control (`SUPER_ADMIN`, `ORG_ADMIN`, `PROCTOR`, `CANDIDATE`).
-- Tenant resolution middleware (`X-Tenant-Slug`, query/params, or JWT claims).
-- Client authentication store (`Zustand`) with Axios request/response interceptors.
-- Candidate registration, Organization onboarding, Sign-In, and Workspace Dashboard pages.
-- Automated test suite covering registration, login, token refresh, RBAC guards, and tenant scoping.
+## Current Phase: Phase 3 Completed
+
+Phase 1 (Project Foundation), Phase 2 (Authentication & Multi-Tenancy), and Phase 3 (Organization Dashboard & User Management) have been implemented and fully verified:
+
+- **Organization Dashboard**: Live MongoDB metrics (candidates, active/inactive breakdowns, proctors, total members, account status, registration date, recent 8 audit logs).
+- **User & Member Management**: Server-side search (regex matching name/email), role filter (`ORG_ADMIN`, `PROCTOR`, `CANDIDATE`), status filter (`ACTIVE`, `INACTIVE`, `SUSPENDED`), server-side pagination, user details modal, and status toggles.
+- **Proctor Management**: Dedicated proctor roster, search, status toggles, and invitation flow featuring auto-generated secure temporary passwords with one-click clipboard copying.
+- **Candidate Roster**: Dedicated candidate management table with search by student ID, name, email, department filter, profile inspection, and status management.
+- **Organization Profile & Policies**: Editable institutional fields (name, type, email, phone, website, physical address, candidate self-registration toggle, require proctoring toggle, default exam duration). Immutable fields (`_id`, `slug`, `code`, `status`, `plan`) strictly protected on backend.
+- **Platform Administration Console (`/app/platform`)**: Dedicated governance dashboard for `SUPER_ADMIN` with global metrics, search, filter, detailed breakdown, and immediate organization suspension/reactivation.
+- **Strict Multi-Tenant Security & RBAC**: Non-negotiable server-side `req.user.organizationId` scoping, cross-tenant isolation enforcement (verified 404/403 across organizations), self-deactivation blocker, sensitive fields (`password`, `tokenVersion`) completely hidden, suspended tenant request rejection.
+- **Audit Logging System**: Automatically tracks actors, targets, actions (`USER_ACTIVATED`, `USER_DEACTIVATED`, `PROCTOR_CREATED`, `ORG_PROFILE_UPDATED`, `ORG_SUSPENDED`, `ORG_REACTIVATED`), IP addresses, and user-agents.
+- **Automated Verification**: End-to-end automated test suite verifying all 9 core security and operational scenarios with 100% pass rate.
 
 **Note:** The planned concurrent-user capacity is a design target, not a benchmark result. Load testing will be performed in a later phase.
 

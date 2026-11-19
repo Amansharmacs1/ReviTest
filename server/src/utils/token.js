@@ -58,4 +58,3 @@ export const verifyAccessToken = (token) => {
 export const verifyRefreshToken = (token) => {
   return jwt.verify(token, env.jwt.refreshSecret, { issuer: env.appName });
 };
-
