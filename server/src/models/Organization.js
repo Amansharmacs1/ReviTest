@@ -104,6 +104,28 @@ const organizationSchema = new mongoose.Schema(
         type: Number,
         default: 60,
       },
+      allowNegativeMarking: {
+        type: Boolean,
+        default: true,
+      },
+      minExamDurationMinutes: {
+        type: Number,
+        default: 5,
+        min: 1,
+      },
+      maxExamDurationMinutes: {
+        type: Number,
+        default: 360,
+        max: 1440,
+      },
+      requireExamInstructions: {
+        type: Boolean,
+        default: false,
+      },
+      permittedQuestionTypes: {
+        type: [String],
+        default: ['MCQ_SINGLE', 'MCQ_MULTIPLE', 'TRUE_FALSE', 'DESCRIPTIVE'],
+      },
       primaryColor: {
         type: String,
         default: '#2563EB',

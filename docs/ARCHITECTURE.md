@@ -159,3 +159,22 @@ The `AuditLog` collection records all critical workspace events:
 - Route `/app/platform` and `/api/platform/*` provide global multi-tenant visibility, organization search, aggregated user counts, and instantaneous workspace suspension/reactivation.
 - Organization suspension immediately blocks all tenant members across all `/api/organization/*` routes via route-level verification middleware.
 
+---
+
+## 7. Phase 4 Architecture: Assessment Authoring, Question Banks & Immutable Snapshots
+
+### 7.1 Question Bank & Multitenancy
+- Questions reside in `Question` collection, indexed by `{ organizationId: 1, status: 1, subject: 1 }` and `{ organizationId: 1, difficulty: 1 }`.
+- Supports 4 question types: `MCQ_SINGLE`, `MCQ_MULTIPLE`, `TRUE_FALSE`, `DESCRIPTIVE`.
+- Confidentiality isolation: `evaluationGuidance` is strictly stripped from candidate-facing projections via `toSafeObject(role)`.
+
+### 7.2 Exam Validation Engine
+- Centralized pre-flight engine (`examValidation.service.js`) computes all section marks and total exam marks server-side.
+- Enforces institutional policy: minimum/maximum exam duration limits, instructions requirements, negative marking permissions, and question status checks.
+
+### 7.3 Immutability via `ExamSnapshot`
+- Once an exam transitions from `DRAFT` to `PUBLISHED`, an `ExamSnapshot` document is created containing deep copies of all questions and section structures.
+- Direct edits and deletions of published exams are prohibited (`PATCH` / `DELETE` return HTTP 400).
+- Examination delivery engines (Phase 6) and Evaluation engines (Phase 8) execute exclusively against snapshots, guaranteeing tamper-proof consistency.
+
+

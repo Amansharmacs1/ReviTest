@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { Organization } from '../models/Organization.js';
 import { User } from '../models/User.js';
 import { AuditLog } from '../models/AuditLog.js';
+import { Exam, EXAM_STATUS } from '../models/Exam.js';
+import { Question, QUESTION_STATUS } from '../models/Question.js';
 import { ROLES } from '../constants/roles.js';
 import { HTTP_STATUS } from '../constants/httpStatusCodes.js';
 import { ApiResponse } from '../utils/apiResponse.js';
@@ -51,16 +53,7 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
   }
 
   // Aggregate user statistics in parallel using real database queries
-  const [
-    totalCandidates,
-    activeCandidates,
-    inactiveCandidates,
-    totalProctors,
-    activeProctors,
-    totalAdmins,
-    totalMembers,
-    recentActivity,
-  ] = await Promise.all([
+  const results = await Promise.all([
     User.countDocuments({ organizationId, role: ROLES.CANDIDATE }),
     User.countDocuments({ organizationId, role: ROLES.CANDIDATE, status: 'ACTIVE' }),
     User.countDocuments({
@@ -72,12 +65,29 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
     User.countDocuments({ organizationId, role: ROLES.PROCTOR, status: 'ACTIVE' }),
     User.countDocuments({ organizationId, role: ROLES.ORG_ADMIN }),
     User.countDocuments({ organizationId }),
+    Exam.countDocuments({ organizationId }),
+    Exam.countDocuments({ organizationId, status: EXAM_STATUS.PUBLISHED }),
+    Question.countDocuments({ organizationId, status: QUESTION_STATUS.ACTIVE }),
     AuditLog.find({ organizationId })
       .sort({ createdAt: -1 })
       .limit(8)
       .select('-__v')
       .lean(),
   ]);
+
+  const [
+    totalCandidates,
+    activeCandidates,
+    inactiveCandidates,
+    totalProctors,
+    activeProctors,
+    totalAdmins,
+    totalMembers,
+    totalExams,
+    publishedExams,
+    totalActiveQuestions,
+    recentActivity,
+  ] = results;
 
   const dashboardData = {
     organization: {
@@ -98,6 +108,14 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
       activeProctors,
       totalAdmins,
       totalMembers,
+      exams: {
+        total: totalExams,
+        published: publishedExams,
+        drafts: totalExams - publishedExams,
+      },
+      questions: {
+        total: totalActiveQuestions,
+      },
       accountStatus: organization.status,
       registrationDate: organization.createdAt,
     },
@@ -113,6 +131,14 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
       },
       totalAdmins,
       totalMembers,
+      exams: {
+        total: totalExams,
+        published: publishedExams,
+        drafts: totalExams - publishedExams,
+      },
+      questions: {
+        total: totalActiveQuestions,
+      },
     },
     recentActivity,
   };

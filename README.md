@@ -82,7 +82,7 @@ The architecture is being designed to support organization-level data isolation 
 | 01 | Project Foundation | Completed |
 | 02 | Authentication & Multi-Tenancy | Completed |
 | 03 | Organization Dashboard & User Management | Completed |
-| 04 | Exam Creation & Question Management | Upcoming |
+| 04 | Exam Creation & Question Management | Completed |
 | 05 | Exam Scheduling & Student Access | Planned |
 | 06 | Examination Engine | Planned |
 | 07 | Proctoring & Examination Security | Planned |
@@ -202,19 +202,38 @@ The current local development services are:
 - `GET /api/platform/organizations/:organizationId` — Organization details & user count breakdown (Super Admin only)
 - `PATCH /api/platform/organizations/:organizationId/status` — Activate / Suspend / Reactivate organization (Super Admin only)
 
-## Current Phase: Phase 3 Completed
+#### Question Bank Management (`/api/questions`)
+- `GET /api/questions` — Paginated questions list with search, status, difficulty, subject, and type filters
+- `POST /api/questions` — Create question (supports `MCQ_SINGLE`, `MCQ_MULTIPLE`, `TRUE_FALSE`, `DESCRIPTIVE`)
+- `GET /api/questions/taxonomy/subjects` — Distinct list of organization subjects
+- `GET /api/questions/taxonomy/topics` — Distinct list of organization topics
+- `GET /api/questions/:questionId` — Retrieve single question details
+- `PATCH /api/questions/:questionId` — Update question statement, options, marks, or metadata
+- `POST /api/questions/:questionId/duplicate` — Clone question into new draft copy
+- `PATCH /api/questions/:questionId/archive` — Soft-archive question
 
-Phase 1 (Project Foundation), Phase 2 (Authentication & Multi-Tenancy), and Phase 3 (Organization Dashboard & User Management) have been implemented and fully verified:
+#### Examination Management (`/api/exams`)
+- `GET /api/exams` — Paginated exams list with search, status, and subject filters
+- `POST /api/exams` — Create draft examination with structured sections
+- `GET /api/exams/:examId` — Retrieve exam with populated question details
+- `PATCH /api/exams/:examId` — Update draft exam (blocked if `PUBLISHED`)
+- `DELETE /api/exams/:examId` — Delete draft exam (blocked if `PUBLISHED`)
+- `POST /api/exams/:examId/duplicate` — Duplicate exam into new `DRAFT` revision
+- `POST /api/exams/:examId/validate` — Run pre-flight assessment validation engine
+- `POST /api/exams/:examId/publish` — Validate, generate immutable `ExamSnapshot`, and transition status to `PUBLISHED`
+- `PATCH /api/exams/:examId/archive` — Archive exam
 
-- **Organization Dashboard**: Live MongoDB metrics (candidates, active/inactive breakdowns, proctors, total members, account status, registration date, recent 8 audit logs).
-- **User & Member Management**: Server-side search (regex matching name/email), role filter (`ORG_ADMIN`, `PROCTOR`, `CANDIDATE`), status filter (`ACTIVE`, `INACTIVE`, `SUSPENDED`), server-side pagination, user details modal, and status toggles.
-- **Proctor Management**: Dedicated proctor roster, search, status toggles, and invitation flow featuring auto-generated secure temporary passwords with one-click clipboard copying.
-- **Candidate Roster**: Dedicated candidate management table with search by student ID, name, email, department filter, profile inspection, and status management.
-- **Organization Profile & Policies**: Editable institutional fields (name, type, email, phone, website, physical address, candidate self-registration toggle, require proctoring toggle, default exam duration). Immutable fields (`_id`, `slug`, `code`, `status`, `plan`) strictly protected on backend.
-- **Platform Administration Console (`/app/platform`)**: Dedicated governance dashboard for `SUPER_ADMIN` with global metrics, search, filter, detailed breakdown, and immediate organization suspension/reactivation.
-- **Strict Multi-Tenant Security & RBAC**: Non-negotiable server-side `req.user.organizationId` scoping, cross-tenant isolation enforcement (verified 404/403 across organizations), self-deactivation blocker, sensitive fields (`password`, `tokenVersion`) completely hidden, suspended tenant request rejection.
-- **Audit Logging System**: Automatically tracks actors, targets, actions (`USER_ACTIVATED`, `USER_DEACTIVATED`, `PROCTOR_CREATED`, `ORG_PROFILE_UPDATED`, `ORG_SUSPENDED`, `ORG_REACTIVATED`), IP addresses, and user-agents.
-- **Automated Verification**: End-to-end automated test suite verifying all 9 core security and operational scenarios with 100% pass rate.
+## Current Phase: Phase 4 Completed
+
+Phase 1 (Foundation), Phase 2 (Authentication & Multi-Tenancy), Phase 3 (Organization Workspace & Members), and Phase 4 (Exam Creation & Question Management) are implemented and fully verified:
+
+- **Question Bank**: 4 question modalities (`MCQ_SINGLE`, `MCQ_MULTIPLE`, `TRUE_FALSE`, `DESCRIPTIVE`), options validation, positive/negative marks, student explanations, and confidential faculty `evaluationGuidance`.
+- **Examination Management**: Multi-section examination authoring, duration enforcement, server-side section marks aggregation, search, status filter (`DRAFT`, `PUBLISHED`, `ARCHIVED`).
+- **Validation Engine**: Pre-flight assessment check evaluating section non-emptiness, active question status, tenant ownership, negative marking permissions, and duration constraints.
+- **Immutable Snapshots**: `ExamSnapshot` generation freezing exam content at publication time to protect downstream test sessions from subsequent question bank modifications.
+- **Multi-Step UI Wizard**: 5-step wizard in `client/src/components/exams/ExamWizardModal.jsx` featuring inline question creation, section assignment, reordering, and pre-flight validation.
+- **Strict Multi-Tenant Security & RBAC**: Tenant isolation strictly verified across all question bank and exam authoring endpoints (`CANDIDATE` and `PROCTOR` access blocked with 403 Forbidden).
+
 
 **Note:** The planned concurrent-user capacity is a design target, not a benchmark result. Load testing will be performed in a later phase.
 

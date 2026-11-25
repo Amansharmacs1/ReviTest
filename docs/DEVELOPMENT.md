@@ -143,3 +143,17 @@ When developing endpoints for organization workspaces:
 5. **Protect Sensitive Fields**: Ensure `.select('-password -tokenVersion')` is applied on all user queries.
 6. **Log All State Transitions**: Ensure `logAuditEvent` is called on all status updates, creations, and profile modifications.
 
+---
+
+## 7. Phase 4 Assessment Authoring & Snapshot Rules
+
+1. **Server-Side Marks Authority**: Never trust client-submitted question marks, section marks, or exam totals. Always recalculate using `validateExam`.
+2. **Strict Question Type Enforcement**: Always validate options against the question type:
+   - `MCQ_SINGLE`: >= 2 options, exactly 1 `isCorrect`.
+   - `MCQ_MULTIPLE`: >= 2 options, >= 1 `isCorrect`.
+   - `TRUE_FALSE`: Exactly 2 options ("True", "False"), exactly 1 `isCorrect`.
+   - `DESCRIPTIVE`: 0 options.
+3. **Published Exam Immutability**: Any modification or deletion attempt on a `PUBLISHED` exam must return HTTP 400 Bad Request. Modifying questions in the question bank must never alter already published exam snapshots.
+4. **Confidentiality**: Always strip `evaluationGuidance` from candidate queries.
+
+

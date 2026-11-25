@@ -4,6 +4,8 @@ import authRoutes from './auth.routes.js';
 import tenantRoutes from './tenant.routes.js';
 import organizationRoutes from './organization.routes.js';
 import platformRoutes from './platform.routes.js';
+import questionRoutes from './question.routes.js';
+import examRoutes from './exam.routes.js';
 
 const router = Router();
 
@@ -21,5 +23,11 @@ router.use('/organization', organizationRoutes);
 
 // 5. Phase 3: Platform Super Admin Routes
 router.use('/platform', platformRoutes);
+
+// 6. Phase 4: Question Bank Routes
+router.use('/questions', questionRoutes);
+
+// 7. Phase 4: Examination Management Routes
+router.use('/exams', examRoutes);
 
 export default router;
