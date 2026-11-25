@@ -10,3 +10,5 @@ export { ExamAttempt, ATTEMPT_STATUS, SUBMISSION_REASON } from './ExamAttempt.js
 export { AttemptResponse } from './AttemptResponse.js';
 export { ExamViolation, VIOLATION_TYPE, VIOLATION_SEVERITY } from './ExamViolation.js';
 export { ExamResult, RESULT_STATUS } from './ExamResult.js';
+export { ApiKey, API_KEY_PERMISSIONS } from './ApiKey.js';
+export { WebhookSubscription, WEBHOOK_EVENTS } from './WebhookSubscription.js';

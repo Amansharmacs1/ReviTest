@@ -52,6 +52,14 @@ const organizationSchema = new mongoose.Schema(
       enum: ['FREE_TRIAL', 'PRO', 'ENTERPRISE'],
       default: 'FREE_TRIAL',
     },
+    subscriptionQuotas: {
+      maxActiveExams: { type: Number, default: 10 },
+      maxCandidates: { type: Number, default: 500 },
+      maxMonthlySubmissions: { type: Number, default: 2500 },
+      enableWebhooks: { type: Boolean, default: true },
+      enableApiKeys: { type: Boolean, default: true },
+      enableCsvExport: { type: Boolean, default: true },
+    },
     contactEmail: {
       type: String,
       required: [true, 'Contact email is required'],

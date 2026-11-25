@@ -10,6 +10,7 @@ import scheduleRoutes from './schedule.routes.js';
 import attemptRoutes from './attempt.routes.js';
 import proctorRoutes from './proctor.routes.js';
 import evaluationRoutes from './evaluation.routes.js';
+import saasRoutes from './saas.routes.js';
 
 const router = Router();
 
@@ -45,5 +46,8 @@ router.use('/proctor', proctorRoutes);
 
 // 11. Phase 8: Evaluation, Results & Analytics Routes
 router.use('/evaluations', evaluationRoutes);
+
+// 12. Phase 9: Integrations & SaaS Management Routes
+router.use('/saas', saasRoutes);
 
 export default router;

@@ -243,6 +243,27 @@ The `AuditLog` collection records all critical workspace events:
 - Automatically computes dense ranks and mathematical percentiles across cohort examinees.
 - Diagnostic analytics aggregates pass rates, score distribution histograms, and item-by-item accuracy rates.
 
+---
+
+## 12. Phase 9 Architecture: Integrations & SaaS Management
+
+### 12.1 Real-Time Quota & Subscription Management
+- **Model**: `Organization` extended with `tier` (`FREE_TRIAL`, `PRO`, `ENTERPRISE`) and `subscriptionQuotas` (`maxActiveExams`, `maxCandidates`, `maxMonthlySubmissions`, feature flags).
+- Server-authoritative validation prevents over-allocation of resources across candidate enrollments, active examination slots, and monthly submission volumes.
+
+### 12.2 Programmatic Developer API Key Management
+- Cryptographic generation with `rvt_live_` namespace.
+- Plaintext keys displayed strictly once; SHA-256 hashes persisted to database with index lookup on `{ hashedKey: 1, isActive: 1 }`.
+- Scoped permissions model and immediate revocation capabilities.
+
+### 12.3 Automated Webhooks & HMAC Signatures
+- Configurable event subscriptions (`EXAM_SUBMITTED`, `RESULTS_PUBLISHED`, `VIOLATION_FLAGGED`).
+- Dispatched payloads signed via HMAC-SHA256 with per-subscription secrets transmitted via `X-Revitest-Signature` headers.
+
+### 12.4 Streaming Data Exports
+- High-efficiency CSV streaming for candidate rosters and cohort examination results with formula-injection sanitization.
+
+
 
 
 

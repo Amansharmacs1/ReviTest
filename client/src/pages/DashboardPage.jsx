@@ -40,6 +40,7 @@ import {
   FileText,
   Radio,
   BarChart2,
+  Key,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { organizationService } from '../services/organizationService';
@@ -68,6 +69,8 @@ import CandidatePreExamModal from '../components/schedules/CandidatePreExamModal
 import LiveProctorDashboard from '../components/proctoring/LiveProctorDashboard';
 import ScheduleAnalyticsModal from '../components/analytics/ScheduleAnalyticsModal';
 import CandidateScorecardModal from '../components/results/CandidateScorecardModal';
+import UsageQuotaWidget from '../components/saas/UsageQuotaWidget';
+import IntegrationsSettingsTab from '../components/saas/IntegrationsSettingsTab';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -875,6 +878,7 @@ export const DashboardPage = () => {
                 { id: 'proctors', label: 'Proctors', icon: ShieldAlert },
                 { id: 'candidates', label: 'Candidates', icon: GraduationCap },
                 { id: 'profile', label: 'Organization & Settings', icon: Settings },
+                { id: 'integrations', label: 'Integrations & API', icon: Key },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -899,6 +903,9 @@ export const DashboardPage = () => {
           {/* TAB 1: WORKSPACE OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6 mt-6">
+              {/* SaaS Tier Quota & Usage Widget */}
+              <UsageQuotaWidget />
+
               {/* Metric Cards */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card className="p-5 space-y-2 border-l-4 border-l-brand-primary">
@@ -2371,6 +2378,22 @@ export const DashboardPage = () => {
                   </div>
                 </form>
               ) : null}
+            </div>
+          )}
+
+          {/* TAB 8: INTEGRATIONS & SAAS MANAGEMENT */}
+          {activeTab === 'integrations' && (
+            <div className="space-y-4 mt-6">
+              <div>
+                <h3 className="font-extrabold text-navy text-base flex items-center gap-2">
+                  <Key className="w-5 h-5 text-brand-primary" />
+                  <span>Integrations, API Keys & Data Export</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Manage programmatic access, subscribe to automated webhook events, and export assessment records.
+                </p>
+              </div>
+              <IntegrationsSettingsTab />
             </div>
           )}
         </div>
