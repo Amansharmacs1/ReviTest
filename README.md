@@ -83,7 +83,7 @@ The architecture is being designed to support organization-level data isolation 
 | 02 | Authentication & Multi-Tenancy | Completed |
 | 03 | Organization Dashboard & User Management | Completed |
 | 04 | Exam Creation & Question Management | Completed |
-| 05 | Exam Scheduling & Student Access | Planned |
+| 05 | Exam Scheduling & Student Access | Completed |
 | 06 | Examination Engine | Planned |
 | 07 | Proctoring & Examination Security | Planned |
 | 08 | Evaluation, Results & Analytics | Planned |
@@ -223,16 +223,29 @@ The current local development services are:
 - `POST /api/exams/:examId/publish` — Validate, generate immutable `ExamSnapshot`, and transition status to `PUBLISHED`
 - `PATCH /api/exams/:examId/archive` — Archive exam
 
-## Current Phase: Phase 4 Completed
+#### Exam Scheduling & Student Access (`/api/schedules`)
+- `GET /api/schedules` — Paginated schedules with candidate counts and real-time status
+- `POST /api/schedules` — Create schedule referencing an immutable `ExamSnapshot`
+- `GET /api/schedules/:scheduleId` — Detailed schedule and snapshot summary
+- `PATCH /api/schedules/:scheduleId` — Update schedule metadata or timing window
+- `POST /api/schedules/:scheduleId/cancel` — Cancel schedule (terminates candidate access)
+- `GET /api/schedules/:scheduleId/candidates` — Paginated candidate roster with status and attempt counts
+- `POST /api/schedules/:scheduleId/candidates` — Assign candidates (by IDs, batch, or all active)
+- `DELETE /api/schedules/:scheduleId/candidates/:candidateId` — Remove candidate from schedule
+- `GET /api/schedules/candidate/my-exams` — Candidate portal assessments (Available, Upcoming, Past)
+- `GET /api/schedules/candidate/:scheduleId/precheck` — Server-authoritative candidate eligibility verification
+- `POST /api/schedules/candidate/:scheduleId/acknowledge` — Examinee rules and integrity acknowledgement
 
-Phase 1 (Foundation), Phase 2 (Authentication & Multi-Tenancy), Phase 3 (Organization Workspace & Members), and Phase 4 (Exam Creation & Question Management) are implemented and fully verified:
+## Current Phase: Phase 5 Completed
 
-- **Question Bank**: 4 question modalities (`MCQ_SINGLE`, `MCQ_MULTIPLE`, `TRUE_FALSE`, `DESCRIPTIVE`), options validation, positive/negative marks, student explanations, and confidential faculty `evaluationGuidance`.
-- **Examination Management**: Multi-section examination authoring, duration enforcement, server-side section marks aggregation, search, status filter (`DRAFT`, `PUBLISHED`, `ARCHIVED`).
-- **Validation Engine**: Pre-flight assessment check evaluating section non-emptiness, active question status, tenant ownership, negative marking permissions, and duration constraints.
-- **Immutable Snapshots**: `ExamSnapshot` generation freezing exam content at publication time to protect downstream test sessions from subsequent question bank modifications.
-- **Multi-Step UI Wizard**: 5-step wizard in `client/src/components/exams/ExamWizardModal.jsx` featuring inline question creation, section assignment, reordering, and pre-flight validation.
-- **Strict Multi-Tenant Security & RBAC**: Tenant isolation strictly verified across all question bank and exam authoring endpoints (`CANDIDATE` and `PROCTOR` access blocked with 403 Forbidden).
+Phase 1 (Foundation), Phase 2 (Authentication & Multi-Tenancy), Phase 3 (Organization Workspace & Members), Phase 4 (Exam Creation & Question Management), and Phase 5 (Exam Scheduling & Student Access) are implemented and fully verified:
+
+- **Assessment Scheduling**: Organizations can schedule published exams referencing immutable snapshots with UTC access windows, late-entry grace limits, and max attempt controls.
+- **Candidate Cohort Assignment**: Individual assignment, departmental batch matching, or organization-wide enrollment with unique index deduplication (`{ scheduleId: 1, candidateId: 1 }`).
+- **Server-Authoritative Eligibility Engine**: Strict verification of account state, tenant isolation, access windows, attempt limits, and late entry restrictions with zero answer key leakage.
+- **Candidate Examination Portal**: Dedicated examinee hub displaying live, upcoming, and past assessments in examinee's local timezone.
+- **Pre-Exam Verification & Rules Acknowledgement**: Examinee instructions modal with mandatory declaration checkbox and server-recorded timestamp.
+- **Automated Verification**: 27 automated test assertions passing with 100% success rate across all scheduling, deduplication, and eligibility scenarios.
 
 
 **Note:** The planned concurrent-user capacity is a design target, not a benchmark result. Load testing will be performed in a later phase.

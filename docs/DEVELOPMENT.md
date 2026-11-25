@@ -156,4 +156,15 @@ When developing endpoints for organization workspaces:
 3. **Published Exam Immutability**: Any modification or deletion attempt on a `PUBLISHED` exam must return HTTP 400 Bad Request. Modifying questions in the question bank must never alter already published exam snapshots.
 4. **Confidentiality**: Always strip `evaluationGuidance` from candidate queries.
 
+---
+
+## 8. Phase 5 Scheduling & Candidate Access Rules
+
+1. **Always Verify Published Snapshot**: Never allow a draft exam to be scheduled. A schedule must reference a valid `ExamSnapshot` ID (`examSnapshotId`).
+2. **UTC Timestamps**: All start and end timestamps must be verified and stored in UTC. Never accept `startTime >= endTime`.
+3. **Deduplicated Cohort Enrollment**: Always use `ScheduleCandidate` with unique compound indexing `{ scheduleId: 1, candidateId: 1 }` to prevent duplicate candidate assignments.
+4. **Server-Authoritative Eligibility**: All access checks must invoke `checkCandidateEligibility`. Client-side timers or route transitions must never bypass server-side validation.
+5. **No Answer Keys to Examinees**: Candidate precheck endpoints must never return question options' `isCorrect` fields or evaluation guidance.
+
+
 

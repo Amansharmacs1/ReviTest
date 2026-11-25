@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { Exam, EXAM_STATUS } from '../models/Exam.js';
 import { Question, QUESTION_STATUS } from '../models/Question.js';
+import { ExamSchedule } from '../models/ExamSchedule.js';
 import { ROLES } from '../constants/roles.js';
 import { HTTP_STATUS } from '../constants/httpStatusCodes.js';
 import { ApiResponse } from '../utils/apiResponse.js';
@@ -68,6 +69,8 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
     Exam.countDocuments({ organizationId }),
     Exam.countDocuments({ organizationId, status: EXAM_STATUS.PUBLISHED }),
     Question.countDocuments({ organizationId, status: QUESTION_STATUS.ACTIVE }),
+    ExamSchedule.countDocuments({ organizationId }),
+    ExamSchedule.countDocuments({ organizationId, status: { $in: ['SCHEDULED', 'ACTIVE'] } }),
     AuditLog.find({ organizationId })
       .sort({ createdAt: -1 })
       .limit(8)
@@ -86,6 +89,8 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
     totalExams,
     publishedExams,
     totalActiveQuestions,
+    totalSchedules,
+    activeSchedules,
     recentActivity,
   ] = results;
 
@@ -116,6 +121,10 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
       questions: {
         total: totalActiveQuestions,
       },
+      schedules: {
+        total: totalSchedules,
+        active: activeSchedules,
+      },
       accountStatus: organization.status,
       registrationDate: organization.createdAt,
     },
@@ -138,6 +147,10 @@ export const getOrganizationDashboardStats = asyncHandler(async (req, res) => {
       },
       questions: {
         total: totalActiveQuestions,
+      },
+      schedules: {
+        total: totalSchedules,
+        active: activeSchedules,
       },
     },
     recentActivity,

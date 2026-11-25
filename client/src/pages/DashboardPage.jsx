@@ -34,11 +34,16 @@ import {
   AlertTriangle,
   HelpCircle,
   Award,
+  Calendar,
+  Play,
+  UserCheck,
+  FileText,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { organizationService } from '../services/organizationService';
 import { questionService } from '../services/questionService';
 import { examService } from '../services/examService';
+import { scheduleService } from '../services/scheduleService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
@@ -53,6 +58,11 @@ import QuestionPreviewModal from '../components/questions/QuestionPreviewModal';
 import ExamWizardModal from '../components/exams/ExamWizardModal';
 import ExamDetailsModal from '../components/exams/ExamDetailsModal';
 import ExamValidationModal from '../components/exams/ExamValidationModal';
+
+// Phase 5 Scheduling Components
+import ScheduleModal from '../components/schedules/ScheduleModal';
+import ScheduleCandidatesModal from '../components/schedules/ScheduleCandidatesModal';
+import CandidatePreExamModal from '../components/schedules/CandidatePreExamModal';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -90,6 +100,32 @@ export const DashboardPage = () => {
   const [examToDelete, setExamToDelete] = useState(null);
   const [examToArchive, setExamToArchive] = useState(null);
   const [examActionLoading, setExamActionLoading] = useState(false);
+
+  // -------------------------------------------------------------
+  // Phase 5: Examination Schedules State (ORG_ADMIN)
+  // -------------------------------------------------------------
+  const [schedules, setSchedules] = useState([]);
+  const [schedulesPagination, setSchedulesPagination] = useState(null);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+  const [schedulesSearch, setSchedulesSearch] = useState('');
+  const [schedulesStatusFilter, setSchedulesStatusFilter] = useState('');
+  const [schedulesPage, setSchedulesPage] = useState(1);
+
+  // Schedule Modals
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [scheduleCandidatesOpen, setScheduleCandidatesOpen] = useState(false);
+  const [selectedScheduleForRoster, setSelectedScheduleForRoster] = useState(null);
+  const [_scheduleActionLoading, setScheduleActionLoading] = useState(false);
+
+  // -------------------------------------------------------------
+  // Phase 5: Candidate Assessments State (CANDIDATE)
+  // -------------------------------------------------------------
+  const [candidateExams, setCandidateExams] = useState({ available: [], upcoming: [], past: [] });
+  const [candidateExamsLoading, setCandidateExamsLoading] = useState(false);
+  const [candidateActiveTab, setCandidateActiveTab] = useState('available');
+  const [candidatePrecheckOpen, setCandidatePrecheckOpen] = useState(false);
+  const [selectedScheduleForPrecheck, setSelectedScheduleForPrecheck] = useState(null);
 
   // -------------------------------------------------------------
   // Phase 4: Question Bank State
@@ -210,6 +246,46 @@ export const DashboardPage = () => {
       setExamsLoading(false);
     }
   }, [isOrgAdmin, examsPage, examsSearch, examsStatusFilter, examsSubjectFilter]);
+
+  // Load Examination Schedules (ORG_ADMIN)
+  const loadSchedules = useCallback(async () => {
+    if (!isOrgAdmin) return;
+    setSchedulesLoading(true);
+    try {
+      const res = await scheduleService.getSchedules({
+        page: schedulesPage,
+        limit: 10,
+        search: schedulesSearch || undefined,
+        status: schedulesStatusFilter || undefined,
+      });
+      setSchedules(res.data?.schedules || []);
+      setSchedulesPagination(res.data?.pagination || null);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to fetch examination schedules.',
+      });
+    } finally {
+      setSchedulesLoading(false);
+    }
+  }, [isOrgAdmin, schedulesPage, schedulesSearch, schedulesStatusFilter]);
+
+  // Load Candidate Assessments (CANDIDATE)
+  const loadCandidateExams = useCallback(async () => {
+    if (isOrgAdmin) return;
+    setCandidateExamsLoading(true);
+    try {
+      const res = await scheduleService.getCandidateExams();
+      setCandidateExams(res.data || { available: [], upcoming: [], past: [] });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to fetch candidate assessments.',
+      });
+    } finally {
+      setCandidateExamsLoading(false);
+    }
+  }, [isOrgAdmin]);
 
   // Load Questions
   const loadQuestions = useCallback(async () => {
@@ -367,10 +443,18 @@ export const DashboardPage = () => {
   }, [checkAuth]);
 
   useEffect(() => {
+    if (!isOrgAdmin) {
+      loadCandidateExams();
+    }
+  }, [isOrgAdmin, loadCandidateExams]);
+
+  useEffect(() => {
     if (activeTab === 'overview') {
       loadDashboardStats();
     } else if (activeTab === 'exams') {
       loadExams();
+    } else if (activeTab === 'schedules') {
+      loadSchedules();
     } else if (activeTab === 'question-bank') {
       loadQuestions();
     } else if (activeTab === 'members') {
@@ -386,6 +470,7 @@ export const DashboardPage = () => {
     activeTab,
     loadDashboardStats,
     loadExams,
+    loadSchedules,
     loadQuestions,
     loadUsers,
     loadProctors,
@@ -504,6 +589,33 @@ export const DashboardPage = () => {
       setFeedback({ type: 'error', message: err.message || 'Failed to archive question.' });
     } finally {
       setQuestionActionLoading(false);
+    }
+  };
+
+  const handleCancelSchedule = async (scheduleId, scheduleTitle) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to cancel '${scheduleTitle}'? Candidates will lose access immediately.`
+      )
+    ) {
+      return;
+    }
+    setScheduleActionLoading(true);
+    try {
+      await scheduleService.cancelSchedule(scheduleId);
+      setFeedback({
+        type: 'success',
+        message: `Schedule '${scheduleTitle}' cancelled successfully.`,
+      });
+      loadSchedules();
+      if (activeTab === 'overview') loadDashboardStats();
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'Failed to cancel schedule.',
+      });
+    } finally {
+      setScheduleActionLoading(false);
     }
   };
 
@@ -747,6 +859,7 @@ export const DashboardPage = () => {
               {[
                 { id: 'overview', label: 'Workspace Overview', icon: Activity },
                 { id: 'exams', label: 'Examinations', icon: FileCheck },
+                { id: 'schedules', label: 'Exam Schedules', icon: Calendar },
                 { id: 'question-bank', label: 'Question Bank', icon: Database },
                 { id: 'members', label: 'All Members', icon: Users },
                 { id: 'proctors', label: 'Proctors', icon: ShieldAlert },
@@ -777,7 +890,7 @@ export const DashboardPage = () => {
           {activeTab === 'overview' && (
             <div className="space-y-6 mt-6">
               {/* Metric Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card className="p-5 space-y-2 border-l-4 border-l-brand-primary">
                   <div className="flex items-center justify-between text-slate-500 text-xs">
                     <span>Examinations</span>
@@ -795,6 +908,22 @@ export const DashboardPage = () => {
                       {dashboardStats?.counts?.exams?.drafts ?? 0}
                     </span>{' '}
                     drafts
+                  </div>
+                </Card>
+
+                <Card className="p-5 space-y-2 border-l-4 border-l-purple-500">
+                  <div className="flex items-center justify-between text-slate-500 text-xs">
+                    <span>Schedules</span>
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="text-2xl font-black text-navy">
+                    {statsLoading ? '...' : (dashboardStats?.counts?.schedules?.total ?? 0)}
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    <span className="text-emerald-600 font-semibold">
+                      {dashboardStats?.counts?.schedules?.active ?? 0}
+                    </span>{' '}
+                    active slots
                   </div>
                 </Card>
 
@@ -1228,6 +1357,221 @@ export const DashboardPage = () => {
                   pagination={examsPagination}
                   onPageChange={(p) => setExamsPage(p)}
                   isLoading={examsLoading}
+                />
+              </Card>
+            </div>
+          )}
+
+          {/* TAB: EXAMINATION SCHEDULES (PHASE 5) */}
+          {activeTab === 'schedules' && (
+            <div className="space-y-4 mt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-extrabold text-navy text-base">Examination Schedules</h3>
+                  <p className="text-xs text-slate-500">
+                    Schedule published assessments, set access windows, and assign candidate cohorts.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => {
+                    setEditingSchedule(null);
+                    setScheduleModalOpen(true);
+                  }}
+                >
+                  Schedule Assessment
+                </Button>
+              </div>
+
+              {/* Filters & Search */}
+              <Card className="p-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search schedules by title..."
+                      value={schedulesSearch}
+                      onChange={(e) => {
+                        setSchedulesSearch(e.target.value);
+                        setSchedulesPage(1);
+                      }}
+                      className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <select
+                      value={schedulesStatusFilter}
+                      onChange={(e) => {
+                        setSchedulesStatusFilter(e.target.value);
+                        setSchedulesPage(1);
+                      }}
+                      className="px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                    >
+                      <option value="">All Statuses</option>
+                      <option value="ACTIVE">Active (Live Now)</option>
+                      <option value="SCHEDULED">Scheduled (Future)</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={RefreshCw}
+                      onClick={loadSchedules}
+                      disabled={schedulesLoading}
+                    >
+                      Refresh
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Schedules Table */}
+              <Card className="overflow-hidden border border-slate-200">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Schedule & Exam</th>
+                        <th className="py-3 px-4">Subject</th>
+                        <th className="py-3 px-4">Access Window (Local Time)</th>
+                        <th className="py-3 px-4">Duration & Attempts</th>
+                        <th className="py-3 px-4">Roster</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {schedulesLoading ? (
+                        <tr>
+                          <td colSpan={7} className="text-center py-10 text-slate-400">
+                            Loading examination schedules...
+                          </td>
+                        </tr>
+                      ) : schedules.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="text-center py-10 text-slate-400 space-y-2">
+                            <Calendar className="w-8 h-8 mx-auto text-slate-300" />
+                            <p className="font-semibold text-slate-600">No examination schedules found.</p>
+                            <p className="text-[11px] text-slate-400">
+                              Publish an exam in the Examinations tab and schedule it here.
+                            </p>
+                          </td>
+                        </tr>
+                      ) : (
+                        schedules.map((item) => (
+                          <tr key={item._id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-bold text-navy">{item.title}</div>
+                              <div className="text-[11px] text-brand-primary flex items-center gap-1 font-medium">
+                                <FileCheck className="w-3 h-3" />
+                                <span>{item.examId?.title || 'Published Exam'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-medium text-slate-700">
+                              {item.examId?.subject || '—'}
+                            </td>
+                            <td className="py-3 px-4 text-[11px] space-y-0.5">
+                              <div className="text-slate-700 font-medium">
+                                <strong>Start:</strong>{' '}
+                                {new Date(item.startTime).toLocaleString([], {
+                                  dateStyle: 'short',
+                                  timeStyle: 'short',
+                                })}
+                              </div>
+                              <div className="text-slate-500">
+                                <strong>End:</strong>{' '}
+                                {new Date(item.endTime).toLocaleString([], {
+                                  dateStyle: 'short',
+                                  timeStyle: 'short',
+                                })}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600">
+                              <div>{item.durationMinutes} mins</div>
+                              <div className="text-[10px] text-slate-400">
+                                Max {item.maxAttempts} attempt{item.maxAttempts > 1 ? 's' : ''}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => {
+                                  setSelectedScheduleForRoster(item);
+                                  setScheduleCandidatesOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-brand-primary border border-blue-200 hover:bg-blue-100 transition-colors"
+                              >
+                                <Users className="w-3 h-3" />
+                                <span>{item.candidateCount} Assigned</span>
+                              </button>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge
+                                variant={
+                                  item.computedStatus === 'ACTIVE'
+                                    ? 'success'
+                                    : item.computedStatus === 'SCHEDULED'
+                                    ? 'info'
+                                    : item.computedStatus === 'CANCELLED'
+                                    ? 'danger'
+                                    : 'neutral'
+                                }
+                              >
+                                {item.computedStatus}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={Users}
+                                  title="Manage Candidates"
+                                  onClick={() => {
+                                    setSelectedScheduleForRoster(item);
+                                    setScheduleCandidatesOpen(true);
+                                  }}
+                                />
+                                {item.status !== 'CANCELLED' && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      icon={Edit}
+                                      title="Edit Schedule"
+                                      onClick={() => {
+                                        setEditingSchedule(item);
+                                        setScheduleModalOpen(true);
+                                      }}
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      icon={Trash2}
+                                      className="text-rose-600 hover:bg-rose-50"
+                                      title="Cancel Schedule"
+                                      onClick={() => handleCancelSchedule(item._id, item.title)}
+                                    />
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <Pagination
+                  pagination={schedulesPagination}
+                  onPageChange={(p) => setSchedulesPage(p)}
+                  isLoading={schedulesLoading}
                 />
               </Card>
             </div>
@@ -1996,58 +2340,215 @@ export const DashboardPage = () => {
         </div>
       ) : (
         /* CANDIDATE / PROCTOR VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-brand-primary" />
-                <h2 className="text-sm font-bold text-navy">Candidate Workspace Access</h2>
-              </div>
-              <Badge variant={getRoleBadgeVariant(user?.role)} size="sm">
-                {user?.role}
-              </Badge>
-            </div>
-
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-400">Full Name:</span>
-                <span className="font-semibold text-navy">{user?.name}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-400">Email:</span>
-                <span className="font-mono text-slate-700">{user?.email}</span>
-              </div>
-              {user?.profile?.studentId && (
-                <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-400">Student / Roll ID:</span>
-                  <span className="font-mono text-navy font-semibold">
-                    {user.profile.studentId}
-                  </span>
+        <div className="space-y-6 mt-6">
+          {/* Candidate Profile Summary */}
+          <Card className="p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-base">
+                  {user?.name?.[0]?.toUpperCase() || 'C'}
                 </div>
-              )}
-              <div className="flex justify-between py-1">
-                <span className="text-slate-400">Access Status:</span>
-                <span className="text-emerald-600 font-medium flex items-center gap-1">
+                <div>
+                  <h2 className="text-base font-bold text-navy">{user?.name}</h2>
+                  <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={getRoleBadgeVariant(user?.role)} size="sm">
+                  {user?.role}
+                </Badge>
+                <span className="text-emerald-600 font-semibold text-xs flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Enrolled & Active</span>
                 </span>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 text-xs">
+              <div>
+                <span className="text-slate-400 block text-[10px] uppercase">Institution</span>
+                <span className="font-semibold text-navy">{organization?.name}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px] uppercase">Student / Roll ID</span>
+                <span className="font-mono font-semibold text-navy">{user?.profile?.studentId || '—'}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px] uppercase">Department / Batch</span>
+                <span className="font-semibold text-navy">{user?.profile?.department || '—'}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 block text-[10px] uppercase">Available Assessments</span>
+                <span className="font-bold text-brand-primary">
+                  {candidateExams.available.length} active
+                </span>
+              </div>
+            </div>
           </Card>
 
-          <Card className="p-6 space-y-4 bg-gradient-to-br from-blue-50/50 to-slate-50 border border-blue-100">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-brand-primary" />
-              <h2 className="text-sm font-bold text-navy">Upcoming Assessments</h2>
+          {/* Candidate Assessment Hub */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div className="flex space-x-3">
+                {[
+                  { id: 'available', label: `Available (${candidateExams.available.length})` },
+                  { id: 'upcoming', label: `Upcoming (${candidateExams.upcoming.length})` },
+                  { id: 'past', label: `Past / History (${candidateExams.past.length})` },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setCandidateActiveTab(tab.id)}
+                    className={`py-2 px-3 rounded-lg text-xs font-semibold transition-colors ${
+                      candidateActiveTab === tab.id
+                        ? 'bg-brand-primary text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={RefreshCw}
+                onClick={loadCandidateExams}
+                disabled={candidateExamsLoading}
+              >
+                Refresh
+              </Button>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Examination authoring (Phase 4) is complete. Once your institution schedules an exam slot in Phase 5 (Exam Scheduling & Access), your active exam link and admit badge will be available here.
-            </p>
-            <div className="p-3 rounded-lg bg-white border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-500" />
-              <span>Assessment engine connection verified for <strong>{organization?.name}</strong></span>
-            </div>
-          </Card>
+
+            {candidateExamsLoading ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                Loading assigned examinations and access windows...
+              </div>
+            ) : candidateExams[candidateActiveTab]?.length === 0 ? (
+              <Card className="p-8 text-center space-y-2 text-slate-400">
+                <Calendar className="w-10 h-10 mx-auto text-slate-300" />
+                <h4 className="text-xs font-bold text-slate-600">
+                  {candidateActiveTab === 'available'
+                    ? 'No Active Examination Available Right Now'
+                    : candidateActiveTab === 'upcoming'
+                    ? 'No Upcoming Examinations Scheduled'
+                    : 'No Past Examination Records'}
+                </h4>
+                <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                  {candidateActiveTab === 'available'
+                    ? 'Check back when your scheduled examination window opens, or contact your institution administrator.'
+                    : 'Scheduled examinations assigned to your cohort will appear here automatically.'}
+                </p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {candidateExams[candidateActiveTab].map((item) => (
+                  <Card
+                    key={item._id}
+                    className={`p-5 space-y-3 border transition-all ${
+                      candidateActiveTab === 'available'
+                        ? 'border-brand-primary/40 bg-gradient-to-br from-white to-blue-50/20 shadow-sm'
+                        : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary">
+                          {item.subject || 'Assessment'}
+                        </span>
+                        <h3 className="text-sm font-bold text-navy">{item.title}</h3>
+                        {item.examTitle && item.examTitle !== item.title && (
+                          <div className="text-[11px] text-slate-500 font-medium">
+                            Based on: {item.examTitle}
+                          </div>
+                        )}
+                      </div>
+                      <Badge
+                        variant={
+                          candidateActiveTab === 'available'
+                            ? 'success'
+                            : candidateActiveTab === 'upcoming'
+                            ? 'info'
+                            : 'neutral'
+                        }
+                      >
+                        {candidateActiveTab === 'available'
+                          ? 'Open Now'
+                          : candidateActiveTab === 'upcoming'
+                          ? 'Upcoming'
+                          : 'Closed'}
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 py-2 border-y border-slate-100 text-[11px]">
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Duration</span>
+                        <span className="font-semibold text-navy flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-brand-primary" />
+                          {item.durationMinutes} mins
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Total Marks</span>
+                        <span className="font-semibold text-navy flex items-center gap-1">
+                          <Award className="w-3 h-3 text-emerald-600" />
+                          {item.totalMarks} marks
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px]">Attempts</span>
+                        <span className="font-semibold text-navy">
+                          {item.attemptsCount} / {item.maxAttempts}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 space-y-0.5">
+                      <div>
+                        <strong>Window Opens:</strong>{' '}
+                        {new Date(item.startTime).toLocaleString([], {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}
+                      </div>
+                      <div>
+                        <strong>Window Closes:</strong>{' '}
+                        {new Date(item.endTime).toLocaleString([], {
+                          dateStyle: 'short',
+                          timeStyle: 'short',
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between">
+                      {item.status === 'ACKNOWLEDGED' ? (
+                        <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Rules Acknowledged</span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">Rules pending review</span>
+                      )}
+
+                      <Button
+                        variant={candidateActiveTab === 'available' ? 'primary' : 'outline'}
+                        size="sm"
+                        icon={candidateActiveTab === 'available' ? Play : FileText}
+                        onClick={() => {
+                          setSelectedScheduleForPrecheck(item._id);
+                          setCandidatePrecheckOpen(true);
+                        }}
+                      >
+                        {candidateActiveTab === 'available'
+                          ? 'View Instructions & Enter'
+                          : 'View Instructions'}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -2360,6 +2861,53 @@ export const DashboardPage = () => {
             </form>
           )}
         </Modal>
+      )}
+
+      {/* 9. Examination Schedule Modal (Phase 5) */}
+      {scheduleModalOpen && (
+        <ScheduleModal
+          isOpen={scheduleModalOpen}
+          onClose={() => {
+            setScheduleModalOpen(false);
+            setEditingSchedule(null);
+          }}
+          initialData={editingSchedule}
+          onSuccess={() => {
+            setFeedback({
+              type: 'success',
+              message: 'Examination schedule saved successfully.',
+            });
+            loadSchedules();
+            if (activeTab === 'overview') loadDashboardStats();
+          }}
+        />
+      )}
+
+      {/* 10. Schedule Candidates Roster Modal (Phase 5) */}
+      {scheduleCandidatesOpen && (
+        <ScheduleCandidatesModal
+          isOpen={scheduleCandidatesOpen}
+          onClose={() => {
+            setScheduleCandidatesOpen(false);
+            setSelectedScheduleForRoster(null);
+          }}
+          schedule={selectedScheduleForRoster}
+        />
+      )}
+
+      {/* 11. Candidate Pre-Exam Instructions & Verification Modal (Phase 5) */}
+      {candidatePrecheckOpen && (
+        <CandidatePreExamModal
+          isOpen={candidatePrecheckOpen}
+          onClose={() => {
+            setCandidatePrecheckOpen(false);
+            setSelectedScheduleForPrecheck(null);
+          }}
+          scheduleId={selectedScheduleForPrecheck}
+          onAcknowledged={() => {
+            loadCandidateExams();
+          }}
+        />
       )}
     </div>
   );

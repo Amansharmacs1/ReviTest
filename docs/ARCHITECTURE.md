@@ -177,4 +177,24 @@ The `AuditLog` collection records all critical workspace events:
 - Direct edits and deletions of published exams are prohibited (`PATCH` / `DELETE` return HTTP 400).
 - Examination delivery engines (Phase 6) and Evaluation engines (Phase 8) execute exclusively against snapshots, guaranteeing tamper-proof consistency.
 
+---
+
+## 8. Phase 5 Architecture: Exam Scheduling, Candidate Assignment & Access Control
+
+### 8.1 Snapshot-Anchored Scheduling
+- `ExamSchedule` documents strictly require a published `Exam` and bind directly to its immutable `ExamSnapshot` (`examSnapshotId`).
+- Start and end timestamps are stored in UTC. Real-time status (`SCHEDULED`, `ACTIVE`, `COMPLETED`, `CANCELLED`) is dynamically computed server-side.
+- Compound indexes optimize lookups: `{ organizationId: 1, status: 1, startTime: 1 }` and `{ organizationId: 1, examId: 1 }`.
+
+### 8.2 Candidate Enrollment & Cohorts
+- `ScheduleCandidate` models the enrollment of examinees to specific scheduled assessments.
+- Unique compound index `{ scheduleId: 1, candidateId: 1 }` enforces single enrollment per assessment.
+- Supports individual manual assignment, batch/department matching, or organization-wide enrollment.
+
+### 8.3 Server-Authoritative Eligibility Engine
+- Candidate test entrance is governed exclusively by `examEligibility.service.js`.
+- Verifies: candidate role, account active state, active tenant state, assignment existence, UTC access window boundaries, late-entry grace periods, and maximum attempt limits.
+- Client payloads are never trusted for authorization; candidate examinee payloads strictly omit answer keys and scoring rubrics.
+
+
 
