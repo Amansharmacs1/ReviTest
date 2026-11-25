@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import { scheduleService } from '../../services/scheduleService';
+import { attemptService } from '../../services/attemptService';
 import {
   FileText,
   Clock,
@@ -11,13 +13,16 @@ import {
   CheckCircle2,
   ShieldAlert,
   Calendar,
+  Play,
 } from 'lucide-react';
 
 export const CandidatePreExamModal = ({ isOpen, onClose, scheduleId, onAcknowledged }) => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [agreeChecked, setAgreeChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [startingAttempt, setStartingAttempt] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
@@ -61,6 +66,23 @@ export const CandidatePreExamModal = ({ isOpen, onClose, scheduleId, onAcknowled
       setError(err.message || 'Failed to record rules acknowledgement.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleStartExam = async () => {
+    setStartingAttempt(true);
+    setError(null);
+    try {
+      const res = await attemptService.startAttempt(scheduleId);
+      const attemptId = res.data?.attempt?._id;
+      if (attemptId) {
+        onClose();
+        navigate(`/app/exam/${attemptId}`);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to start examination attempt.');
+    } finally {
+      setStartingAttempt(false);
     }
   };
 
@@ -183,13 +205,15 @@ export const CandidatePreExamModal = ({ isOpen, onClose, scheduleId, onAcknowled
 
           {/* Acknowledgement Status / Form */}
           {success ? (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <div>
-                <span className="font-bold block">Integrity Rules Acknowledged</span>
-                <span className="text-[11px] text-emerald-700">
-                  You are verified and enrolled. When Phase 6 (Examination Engine) launches, you can proceed directly into the test interface.
-                </span>
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div>
+                  <span className="font-bold block">Integrity Rules Acknowledged</span>
+                  <span className="text-[11px] text-emerald-700">
+                    You are verified and authorized to enter the secure examination session.
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
@@ -216,7 +240,7 @@ export const CandidatePreExamModal = ({ isOpen, onClose, scheduleId, onAcknowled
             <Button variant="ghost" size="sm" onClick={onClose}>
               Close
             </Button>
-            {!success && (
+            {!success ? (
               <Button
                 variant="primary"
                 size="sm"
@@ -225,6 +249,21 @@ export const CandidatePreExamModal = ({ isOpen, onClose, scheduleId, onAcknowled
                 disabled={submitting || !agreeChecked}
               >
                 {submitting ? 'Recording...' : 'Acknowledge Rules & Confirm'}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Play}
+                onClick={handleStartExam}
+                disabled={startingAttempt || !data?.isEligible}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              >
+                {startingAttempt
+                  ? 'Initializing Session...'
+                  : data?.isEligible
+                  ? 'Start Examination Now'
+                  : 'Access Window Closed'}
               </Button>
             )}
           </div>

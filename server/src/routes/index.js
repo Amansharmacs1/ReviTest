@@ -7,6 +7,7 @@ import platformRoutes from './platform.routes.js';
 import questionRoutes from './question.routes.js';
 import examRoutes from './exam.routes.js';
 import scheduleRoutes from './schedule.routes.js';
+import attemptRoutes from './attempt.routes.js';
 
 const router = Router();
 
@@ -33,5 +34,8 @@ router.use('/exams', examRoutes);
 
 // 8. Phase 5: Examination Scheduling & Access Routes
 router.use('/schedules', scheduleRoutes);
+
+// 9. Phase 6: Examination Engine & Attempt Lifecycle Routes
+router.use('/attempts', attemptRoutes);
 
 export default router;

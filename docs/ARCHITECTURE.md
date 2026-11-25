@@ -196,5 +196,24 @@ The `AuditLog` collection records all critical workspace events:
 - Verifies: candidate role, account active state, active tenant state, assignment existence, UTC access window boundaries, late-entry grace periods, and maximum attempt limits.
 - Client payloads are never trusted for authorization; candidate examinee payloads strictly omit answer keys and scoring rubrics.
 
+---
+
+## 9. Phase 6 Architecture: Examination Engine, Concurrency Safety & Autosave
+
+### 9.1 Concurrency-Safe Attempt Lifecycle
+- **Model**: `ExamAttempt` manages execution sessions (`IN_PROGRESS`, `SUBMITTED`, `AUTO_SUBMITTED`, `EXPIRED`).
+- **Partial Unique Index**: `{ scheduleId: 1, candidateId: 1 }` with `{ partialFilterExpression: { status: 'IN_PROGRESS' } }` prevents concurrent duplicate attempts at the database storage engine layer.
+- **Server-Authoritative Timer**: `endsAt` is strictly derived as `Math.min(startedAt + durationMinutes, schedule.endTime)`. All answer saves after `endsAt` are rejected with HTTP 403 and automatically trigger `AUTO_SUBMITTED`.
+
+### 9.2 Segregated Response Storage for High Concurrency
+- `AttemptResponse` documents are stored separately from `ExamAttempt` to prevent massive document rewrites during frequent debounced autosaves.
+- Unique compound index `{ attemptId: 1, questionId: 1 }` ensures fast, atomic updates.
+- Optimistic Concurrency Control (OCC) monotonically tracks `version` against `clientVersion` to prevent out-of-order write overwrite.
+
+### 9.3 Zero-Leak Question Delivery
+- Sanitize engine extracts questions exclusively from the immutable snapshot and strips all answer keys (`isCorrect`, `correctAnswers`) and faculty `evaluationGuidance`.
+- Candidate examinee clients never possess answer verification data locally.
+
+
 
 

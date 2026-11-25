@@ -6,3 +6,5 @@ export { Exam } from './Exam.js';
 export { ExamSnapshot } from './ExamSnapshot.js';
 export { ExamSchedule } from './ExamSchedule.js';
 export { ScheduleCandidate } from './ScheduleCandidate.js';
+export { ExamAttempt, ATTEMPT_STATUS, SUBMISSION_REASON } from './ExamAttempt.js';
+export { AttemptResponse } from './AttemptResponse.js';

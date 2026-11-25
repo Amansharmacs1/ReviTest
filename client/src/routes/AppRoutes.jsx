@@ -7,12 +7,23 @@ import RegisterOrgPage from '../pages/RegisterOrgPage';
 import RegisterCandidatePage from '../pages/RegisterCandidatePage';
 import DashboardPage from '../pages/DashboardPage';
 import PlatformDashboardPage from '../pages/PlatformDashboardPage';
+import ExamRunnerPage from '../pages/ExamRunnerPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
 export const AppRoutes = () => {
   return (
     <Routes>
+      {/* Dedicated Distraction-Free Examination Runner */}
+      <Route
+        path="app/exam/:attemptId"
+        element={
+          <ProtectedRoute allowedRoles={['CANDIDATE']}>
+            <ExamRunnerPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="/" element={<MainLayout />}>
         {/* Public Routes */}
         <Route index element={<HomePage />} />
