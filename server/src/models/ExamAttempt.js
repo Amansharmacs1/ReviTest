@@ -11,6 +11,8 @@ export const SUBMISSION_REASON = {
   MANUAL: 'MANUAL',
   TIME_EXPIRED: 'TIME_EXPIRED',
   POLICY_TRIGGERED: 'POLICY_TRIGGERED',
+  VIOLATION_TERMINATED: 'VIOLATION_TERMINATED',
+  PROCTOR_FORCE_SUBMIT: 'PROCTOR_FORCE_SUBMIT',
 };
 
 const examAttemptSchema = new Schema(
@@ -94,6 +96,37 @@ const examAttemptSchema = new Schema(
       enum: [...Object.values(SUBMISSION_REASON), null],
       default: null,
     },
+    violationCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    tabSwitchCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    flaggedReason: {
+      type: String,
+      default: '',
+    },
+    isPaused: {
+      type: Boolean,
+      default: false,
+    },
+    proctorWarnings: [
+      {
+        message: { type: String, required: true },
+        timestamp: { type: Date, default: Date.now },
+        proctorId: { type: Schema.Types.ObjectId, ref: 'User' },
+        proctorName: { type: String, default: '' },
+      },
+    ],
     ipAddress: {
       type: String,
       default: '',

@@ -38,6 +38,7 @@ import {
   Play,
   UserCheck,
   FileText,
+  Radio,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { organizationService } from '../services/organizationService';
@@ -63,6 +64,7 @@ import ExamValidationModal from '../components/exams/ExamValidationModal';
 import ScheduleModal from '../components/schedules/ScheduleModal';
 import ScheduleCandidatesModal from '../components/schedules/ScheduleCandidatesModal';
 import CandidatePreExamModal from '../components/schedules/CandidatePreExamModal';
+import LiveProctorDashboard from '../components/proctoring/LiveProctorDashboard';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -860,6 +862,7 @@ export const DashboardPage = () => {
                 { id: 'overview', label: 'Workspace Overview', icon: Activity },
                 { id: 'exams', label: 'Examinations', icon: FileCheck },
                 { id: 'schedules', label: 'Exam Schedules', icon: Calendar },
+                { id: 'proctoring', label: 'Live Proctoring', icon: Radio },
                 { id: 'question-bank', label: 'Question Bank', icon: Database },
                 { id: 'members', label: 'All Members', icon: Users },
                 { id: 'proctors', label: 'Proctors', icon: ShieldAlert },
@@ -1574,6 +1577,24 @@ export const DashboardPage = () => {
                   isLoading={schedulesLoading}
                 />
               </Card>
+            </div>
+          )}
+
+          {/* TAB: LIVE PROCTORING & EXAMINATION SECURITY */}
+          {activeTab === 'proctoring' && (
+            <div className="space-y-4 mt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-extrabold text-navy text-base flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-brand-primary" />
+                    <span>Real-Time Proctoring & Security Command Center</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Monitor candidate assessment attempts live, track integrity violations, dispatch warnings, and maintain examination audit trails.
+                  </p>
+                </div>
+              </div>
+              <LiveProctorDashboard />
             </div>
           )}
 
@@ -2338,8 +2359,36 @@ export const DashboardPage = () => {
             </div>
           )}
         </div>
+      ) : user?.role === 'PROCTOR' ? (
+        /* DEDICATED PROCTOR WORKSPACE */
+        <div className="space-y-6 mt-6">
+          <Card className="p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-base">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-navy">{user?.name}</h2>
+                  <p className="text-xs text-slate-500 font-mono">{user?.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="warning" size="md">
+                  PROCTOR
+                </Badge>
+                <span className="text-emerald-700 font-semibold text-xs flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Assigned Institution: {organization?.name}</span>
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          <LiveProctorDashboard />
+        </div>
       ) : (
-        /* CANDIDATE / PROCTOR VIEW */
+        /* CANDIDATE VIEW */
         <div className="space-y-6 mt-6">
           {/* Candidate Profile Summary */}
           <Card className="p-5">

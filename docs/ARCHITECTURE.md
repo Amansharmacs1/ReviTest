@@ -214,6 +214,22 @@ The `AuditLog` collection records all critical workspace events:
 - Sanitize engine extracts questions exclusively from the immutable snapshot and strips all answer keys (`isCorrect`, `correctAnswers`) and faculty `evaluationGuidance`.
 - Candidate examinee clients never possess answer verification data locally.
 
+---
+
+## 10. Phase 7 Architecture: Proctoring & Examination Security
+
+### 10.1 Telemetry & Incident Auditing
+- **Model**: `ExamViolation` records forensic incident telemetry (`TAB_SWITCH`, `WINDOW_BLUR`, `FULLSCREEN_EXIT`, `CLIPBOARD_COPY`, `CLIPBOARD_PASTE`, `CONTEXT_MENU`).
+- High-throughput indexing `{ scheduleId: 1, timestamp: -1 }` and `{ attemptId: 1, timestamp: -1 }` enables low-latency proctor streaming.
+
+### 10.2 Server-Authoritative Threshold Enforcement
+- Tab switches and integrity violations are validated against the exam's snapshot settings (`maxTabSwitches`).
+- Exceeding violation thresholds triggers atomic attempt disqualification (`status: 'AUTO_SUBMITTED'`, `submissionReason: 'VIOLATION_TERMINATED'`) and logs immutable audit trails.
+
+### 10.3 Real-Time Proctor Command Center
+- Live streaming dashboard for `PROCTOR` and `ORG_ADMIN` roles aggregates examinee statuses, violation counts, and recent incident logs.
+- Supports proctor interventions: direct warning dispatch and force termination for confirmed misconduct.
+
 
 
 

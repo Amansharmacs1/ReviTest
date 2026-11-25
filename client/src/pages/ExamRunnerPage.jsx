@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { attemptService } from '../services/attemptService';
+import { proctorService } from '../services/proctorService';
 import { useAuthStore } from '../store/authStore';
 import ExamHeader from '../components/exam-engine/ExamHeader';
 import QuestionPalette from '../components/exam-engine/QuestionPalette';
 import QuestionDisplay from '../components/exam-engine/QuestionDisplay';
 import SubmitConfirmationModal from '../components/exam-engine/SubmitConfirmationModal';
 import SubmissionReceiptModal from '../components/exam-engine/SubmissionReceiptModal';
-import { ShieldAlert, AlertCircle, RefreshCw } from 'lucide-react';
+import Modal from '../components/common/Modal';
+import { ShieldAlert, AlertCircle, RefreshCw, AlertTriangle, Bell, XCircle } from 'lucide-react';
 import Button from '../components/common/Button';
 
 export const ExamRunnerPage = () => {
@@ -33,6 +35,13 @@ export const ExamRunnerPage = () => {
   const [saveStatus, setSaveStatus] = useState('SAVED'); // 'SAVED' | 'SAVING' | 'OFFLINE' | 'ERROR'
   const debounceTimerRef = useRef({});
   const offlineQueueRef = useRef(new Map());
+
+  // Proctoring & Integrity State
+  const [integrityAlert, setIntegrityAlert] = useState(null);
+  const [proctorWarningAlert, setProctorWarningAlert] = useState(null);
+  const [isTerminatedModalOpen, setIsTerminatedModalOpen] = useState(false);
+  const [terminationReason, setTerminationReason] = useState('');
+  const lastViolationTimeRef = useRef(0);
 
   // Modals
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -209,6 +218,134 @@ export const ExamRunnerPage = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isReceiptModalOpen]);
+
+  // -------------------------------------------------------------
+  // Real-Time Proctoring & Client-Side Integrity Monitoring
+  // -------------------------------------------------------------
+  const reportSecurityViolation = useCallback(
+    async (violationType, details, metadata = {}) => {
+      const now = Date.now();
+      if (now - lastViolationTimeRef.current < 1200) return;
+      lastViolationTimeRef.current = now;
+
+      if (isReceiptModalOpen || isTerminatedModalOpen) return;
+
+      try {
+        const res = await proctorService.recordViolation(attemptId, {
+          violationType,
+          details,
+          metadata,
+        });
+
+        const data = res.data;
+        if (data?.autoTerminated) {
+          setIsTerminatedModalOpen(true);
+          setTerminationReason(
+            data.attempt?.flaggedReason || 'Maximum security violations exceeded.'
+          );
+          setReceiptData({
+            submittedAt: new Date().toISOString(),
+            submissionReason: 'VIOLATION_TERMINATED',
+          });
+        } else if (data?.violation) {
+          setIntegrityAlert({
+            type: violationType,
+            message: details,
+            tabSwitchCount: data.tabSwitchCount,
+            maxTabSwitches: data.maxTabSwitches,
+            remaining: data.remainingTabSwitches,
+          });
+
+          setTimeout(() => {
+            setIntegrityAlert(null);
+          }, 6000);
+        }
+      } catch (err) {
+        console.error('Failed to log proctor violation:', err);
+      }
+    },
+    [attemptId, isReceiptModalOpen, isTerminatedModalOpen]
+  );
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        reportSecurityViolation(
+          'TAB_SWITCH',
+          'Examinee left the examination window or switched browser tabs'
+        );
+      }
+    };
+
+    const handleWindowBlur = () => {
+      reportSecurityViolation('WINDOW_BLUR', 'Examination window lost focus');
+    };
+
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      reportSecurityViolation('CONTEXT_MENU', 'Right-click context menu attempt blocked');
+    };
+
+    const handleCopy = (e) => {
+      e.preventDefault();
+      reportSecurityViolation('CLIPBOARD_COPY', 'Content copy attempt blocked');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('copy', handleCopy);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', handleCopy);
+    };
+  }, [reportSecurityViolation]);
+
+  // Periodic poll for proctor interventions
+  useEffect(() => {
+    if (isReceiptModalOpen || isTerminatedModalOpen) return;
+
+    const proctorPollInterval = setInterval(async () => {
+      try {
+        const res = await attemptService.getQuestions(attemptId);
+        const currentAttempt = res.data?.attempt;
+        if (!currentAttempt) return;
+
+        if (
+          currentAttempt.status === 'AUTO_SUBMITTED' &&
+          (currentAttempt.submissionReason === 'PROCTOR_FORCE_SUBMIT' ||
+            currentAttempt.submissionReason === 'VIOLATION_TERMINATED')
+        ) {
+          setIsTerminatedModalOpen(true);
+          setTerminationReason(currentAttempt.flaggedReason || 'Terminated by proctor');
+          setReceiptData({
+            submittedAt: currentAttempt.submittedAt,
+            submissionReason: currentAttempt.submissionReason,
+          });
+          return;
+        }
+
+        if (
+          Array.isArray(currentAttempt.proctorWarnings) &&
+          currentAttempt.proctorWarnings.length > 0
+        ) {
+          const latestWarning =
+            currentAttempt.proctorWarnings[currentAttempt.proctorWarnings.length - 1];
+          const warnTime = new Date(latestWarning.timestamp).getTime();
+          if (Date.now() - warnTime < 35000) {
+            setProctorWarningAlert(latestWarning.message);
+          }
+        }
+      } catch {
+        // Ignore background polling errors
+      }
+    }, 9000);
+
+    return () => clearInterval(proctorPollInterval);
+  }, [attemptId, isReceiptModalOpen, isTerminatedModalOpen]);
 
   // -------------------------------------------------------------
   // Candidate Actions & Answer Handlers
@@ -451,6 +588,44 @@ export const ExamRunnerPage = () => {
         totalQuestions={questions.length}
       />
 
+      {/* Proctor Integrity Warning Alert Banner */}
+      {integrityAlert && (
+        <div className="bg-amber-500 text-white px-4 py-2 text-xs font-semibold flex items-center justify-between shadow-md sticky top-16 z-20">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-white shrink-0" />
+            <span>
+              Security Notice: {integrityAlert.message} (Incident {integrityAlert.tabSwitchCount} of{' '}
+              {integrityAlert.maxTabSwitches} recorded. {integrityAlert.remaining} remaining before
+              automatic termination).
+            </span>
+          </div>
+          <button
+            onClick={() => setIntegrityAlert(null)}
+            className="text-white hover:text-amber-100 font-bold ml-4"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Official Proctor Direct Warning Alert */}
+      {proctorWarningAlert && (
+        <div className="bg-rose-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-md sticky top-16 z-20">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-amber-200 animate-pulse shrink-0" />
+            <span>
+              <strong>OFFICIAL PROCTOR WARNING:</strong> {proctorWarningAlert}
+            </span>
+          </div>
+          <button
+            onClick={() => setProctorWarningAlert(null)}
+            className="text-white hover:text-rose-100 font-bold ml-4 underline"
+          >
+            Acknowledge
+          </button>
+        </div>
+      )}
+
       {/* Main Examination Workspace: Left Display + Right Palette */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left: Active Question Area */}
@@ -511,6 +686,45 @@ export const ExamRunnerPage = () => {
         submittedAt={receiptData?.submittedAt}
         submissionReason={receiptData?.submissionReason}
       />
+
+      {/* Disqualification / Proctor Termination Modal */}
+      <Modal
+        isOpen={isTerminatedModalOpen}
+        onClose={() => {}}
+        title="Examination Terminated for Security Violation"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4 text-xs text-center py-2">
+          <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-sm">
+            <XCircle className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-navy">Assessment Disqualified & Terminated</h3>
+            <p className="text-rose-600 font-semibold text-xs">{terminationReason}</p>
+          </div>
+
+          <p className="text-slate-600 leading-relaxed text-[11px]">
+            Your examination has been automatically sealed and submitted under security violation.
+            This incident has been logged with time, IP address, and violation telemetry for your
+            institution&apos;s administrative review.
+          </p>
+
+          <div className="pt-2 border-t border-slate-100">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                setIsTerminatedModalOpen(false);
+                setIsReceiptModalOpen(true);
+              }}
+              className="w-full justify-center bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              View Submission Receipt
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
