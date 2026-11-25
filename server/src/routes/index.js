@@ -9,6 +9,7 @@ import examRoutes from './exam.routes.js';
 import scheduleRoutes from './schedule.routes.js';
 import attemptRoutes from './attempt.routes.js';
 import proctorRoutes from './proctor.routes.js';
+import evaluationRoutes from './evaluation.routes.js';
 
 const router = Router();
 
@@ -41,5 +42,8 @@ router.use('/attempts', attemptRoutes);
 
 // 10. Phase 7: Proctoring & Examination Security Routes
 router.use('/proctor', proctorRoutes);
+
+// 11. Phase 8: Evaluation, Results & Analytics Routes
+router.use('/evaluations', evaluationRoutes);
 
 export default router;

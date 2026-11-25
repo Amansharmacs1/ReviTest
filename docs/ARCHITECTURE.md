@@ -230,6 +230,19 @@ The `AuditLog` collection records all critical workspace events:
 - Live streaming dashboard for `PROCTOR` and `ORG_ADMIN` roles aggregates examinee statuses, violation counts, and recent incident logs.
 - Supports proctor interventions: direct warning dispatch and force termination for confirmed misconduct.
 
+---
+
+## 11. Phase 8 Architecture: Evaluation, Results & Analytics Engine
+
+### 11.1 Immutable Automated Scoring
+- **Model**: `ExamResult` stores evaluated scores, percentages, ranks, and percentiles.
+- Evaluates against the sealed `ExamSnapshot`, ensuring modifications to original questions do not alter historical assessments.
+- Supports objective evaluation (`MCQ_SINGLE`, `MCQ_MULTIPLE`, `TRUE_FALSE`) with negative marking and manual grading for descriptive questions.
+
+### 11.2 Cohort Ranking & Analytics Pipeline
+- Automatically computes dense ranks and mathematical percentiles across cohort examinees.
+- Diagnostic analytics aggregates pass rates, score distribution histograms, and item-by-item accuracy rates.
+
 
 
 

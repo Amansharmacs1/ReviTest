@@ -39,6 +39,7 @@ import {
   UserCheck,
   FileText,
   Radio,
+  BarChart2,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { organizationService } from '../services/organizationService';
@@ -65,6 +66,8 @@ import ScheduleModal from '../components/schedules/ScheduleModal';
 import ScheduleCandidatesModal from '../components/schedules/ScheduleCandidatesModal';
 import CandidatePreExamModal from '../components/schedules/CandidatePreExamModal';
 import LiveProctorDashboard from '../components/proctoring/LiveProctorDashboard';
+import ScheduleAnalyticsModal from '../components/analytics/ScheduleAnalyticsModal';
+import CandidateScorecardModal from '../components/results/CandidateScorecardModal';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -119,6 +122,10 @@ export const DashboardPage = () => {
   const [scheduleCandidatesOpen, setScheduleCandidatesOpen] = useState(false);
   const [selectedScheduleForRoster, setSelectedScheduleForRoster] = useState(null);
   const [_scheduleActionLoading, setScheduleActionLoading] = useState(false);
+
+  // Phase 8: Results & Analytics State
+  const [analyticsModalSchedule, setAnalyticsModalSchedule] = useState(null);
+  const [scorecardModalAttemptId, setScorecardModalAttemptId] = useState(null);
 
   // -------------------------------------------------------------
   // Phase 5: Candidate Assessments State (CANDIDATE)
@@ -1530,6 +1537,14 @@ export const DashboardPage = () => {
                             </td>
                             <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  icon={BarChart2}
+                                  title="Analytics & Results"
+                                  onClick={() => setAnalyticsModalSchedule(item)}
+                                  className="text-brand-primary hover:bg-blue-50"
+                                />
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -2956,6 +2971,25 @@ export const DashboardPage = () => {
           onAcknowledged={() => {
             loadCandidateExams();
           }}
+        />
+      )}
+
+      {/* 12. Schedule Cohort Analytics & Leaderboard Modal (Phase 8) */}
+      {analyticsModalSchedule && (
+        <ScheduleAnalyticsModal
+          isOpen={Boolean(analyticsModalSchedule)}
+          onClose={() => setAnalyticsModalSchedule(null)}
+          scheduleId={analyticsModalSchedule?._id}
+          scheduleTitle={analyticsModalSchedule?.title}
+        />
+      )}
+
+      {/* 13. Candidate Authenticated Scorecard Modal (Phase 8) */}
+      {scorecardModalAttemptId && (
+        <CandidateScorecardModal
+          isOpen={Boolean(scorecardModalAttemptId)}
+          onClose={() => setScorecardModalAttemptId(null)}
+          attemptId={scorecardModalAttemptId}
         />
       )}
     </div>
