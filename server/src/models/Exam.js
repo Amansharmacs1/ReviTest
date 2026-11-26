@@ -220,7 +220,7 @@ const examSchema = new Schema(
       requireRollNumber: { type: Boolean, default: false },
       requireDepartment: { type: Boolean, default: false },
       allowMultipleAttempts: { type: Boolean, default: false },
-      publicLeaderboard: { type: Boolean, default: true },
+      publicLeaderboard: { type: Boolean, default: false },
       showResultsImmediately: { type: Boolean, default: true },
     },
     googleSheet: {

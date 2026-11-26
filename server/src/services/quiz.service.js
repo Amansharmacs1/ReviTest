@@ -132,7 +132,7 @@ export const quizService = {
         requireRollNumber: Boolean(quizSettings.requireRollNumber),
         requireDepartment: Boolean(quizSettings.requireDepartment),
         allowMultipleAttempts: Boolean(quizSettings.allowMultipleAttempts),
-        publicLeaderboard: quizSettings.publicLeaderboard !== false,
+        publicLeaderboard: false, // Leaderboard is strictly private to the quiz creator
         showResultsImmediately: quizSettings.showResultsImmediately !== false,
       },
       createdBy,
@@ -460,7 +460,7 @@ export const quizService = {
       status: 'SUBMITTED',
     })
       .sort({ score: -1, timeTakenSeconds: 1, submittedAt: 1 })
-      .select('name rollNumber score maximumMarks percentage rank timeTakenSeconds submittedAt');
+      .select('name email rollNumber college department score maximumMarks percentage rank timeTakenSeconds submittedAt');
   },
 
   /**
@@ -748,33 +748,16 @@ export const quizService = {
       maximumMarks: quiz.totalMarks,
       percentage: quiz.quizSettings.showResultsImmediately ? evaluation.percentage : null,
       showResults: quiz.quizSettings.showResultsImmediately,
-      publicLeaderboard: quiz.quizSettings.publicLeaderboard,
+      publicLeaderboard: false,
       submittedAt: new Date(),
     };
   },
 
   /**
-   * PUBLIC API: Get Public Leaderboard
+   * PUBLIC API: Get Public Leaderboard (Strictly Private to Quiz Creator)
    */
-  async getPublicLeaderboard(publicQuizId) {
-    const quiz = await Exam.findOne({ publicQuizId });
-    if (!quiz) throw new Error('Quiz not found');
-
-    if (!quiz.quizSettings.publicLeaderboard) {
-      throw new Error('Public leaderboard is disabled for this quiz');
-    }
-
-    const leaderboard = await QuizParticipant.find({
-      quizId: quiz._id,
-      status: 'SUBMITTED',
-    })
-      .sort({ score: -1, timeTakenSeconds: 1, submittedAt: 1 })
-      .select('rank name score maximumMarks percentage timeTakenSeconds submittedAt');
-
-    return {
-      quizTitle: quiz.title,
-      leaderboard,
-    };
+  async getPublicLeaderboard(_publicQuizId) {
+    throw new Error('Leaderboards are private and strictly accessible to the quiz creator in the dashboard.');
   },
 
   /**

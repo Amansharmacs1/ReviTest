@@ -57,7 +57,7 @@ export const CreateQuizModal = ({ isOpen, onClose, onCreated }) => {
     requireCollege: false,
     requireDepartment: false,
     allowMultipleAttempts: false,
-    publicLeaderboard: true,
+    publicLeaderboard: false,
     showResultsImmediately: true,
   });
 
@@ -661,27 +661,17 @@ export const CreateQuizModal = ({ isOpen, onClose, onCreated }) => {
               />
             </label>
 
-            <label className="p-3 bg-white rounded-lg border border-slate-200 flex items-center justify-between text-xs cursor-pointer hover:bg-slate-50">
+            <div className="p-3.5 bg-blue-50/70 rounded-lg border border-blue-200/80 flex items-start gap-3 text-xs">
+              <Shield className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-700 block">
-                  Enable Public Leaderboard
+                <span className="font-bold text-navy block">
+                  Private Leaderboard & Scoring (Creator Only)
                 </span>
-                <span className="text-[11px] text-slate-400">
-                  Allows students to view live ranks (emails are kept private).
+                <span className="text-[11px] text-slate-600 leading-relaxed block mt-0.5">
+                  Leaderboard rankings, performance analytics, and participant scores are strictly private to you as the quiz creator. You can review and export them anytime from your dashboard.
                 </span>
               </div>
-              <input
-                type="checkbox"
-                checked={quizSettings.publicLeaderboard}
-                onChange={(e) =>
-                  setQuizSettings({
-                    ...quizSettings,
-                    publicLeaderboard: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 text-brand-primary rounded"
-              />
-            </label>
+            </div>
           </div>
 
           <div className="flex justify-between pt-4 border-t border-slate-200">

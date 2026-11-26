@@ -217,14 +217,11 @@ export const quizController = {
     });
   }),
 
-  // Public 5: Public leaderboard
-  getPublicLeaderboard: asyncHandler(async (req, res) => {
-    const result = await quizService.getPublicLeaderboard(req.params.publicQuizId);
-
-    return ApiResponse.success(res, {
-      statusCode: HTTP_STATUS.OK,
-      message: 'Public leaderboard retrieved.',
-      data: result,
+  // Public 5: Public leaderboard (Strictly Private to Quiz Creator)
+  getPublicLeaderboard: asyncHandler(async (_req, res) => {
+    return ApiResponse.error(res, {
+      statusCode: HTTP_STATUS.FORBIDDEN,
+      message: 'Leaderboards are private and strictly accessible to the quiz creator in the dashboard.',
     });
   }),
 };

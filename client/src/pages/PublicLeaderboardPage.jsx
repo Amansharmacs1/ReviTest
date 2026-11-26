@@ -60,20 +60,34 @@ export const PublicLeaderboardPage = () => {
     );
   }
 
-  if (errorMsg) {
+  if (errorMsg || true) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 text-center space-y-4">
-          <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-            <AlertCircle className="w-6 h-6" />
+        <Card className="max-w-md w-full p-8 text-center space-y-5 shadow-elevated border border-slate-200">
+          <div className="w-14 h-14 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto">
+            <Trophy className="w-7 h-7" />
           </div>
-          <h2 className="text-lg font-bold text-navy">Leaderboard Unavailable</h2>
-          <p className="text-sm text-slate-600">{errorMsg}</p>
-          <Link to={`/quiz/${publicQuizId}`}>
-            <Button variant="outline" size="sm" icon={ArrowLeft}>
-              Back to Quiz
-            </Button>
-          </Link>
+          <div className="space-y-2">
+            <Badge variant="warning" size="sm">
+              Creator Only
+            </Badge>
+            <h2 className="text-xl font-bold text-navy">Private Leaderboard</h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              This leaderboard is private and only visible to the quiz creator. If you are the instructor, please sign in to your REVITEST organization dashboard to view the leaderboard.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link to={`/quiz/${publicQuizId}`} className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" icon={ArrowLeft} className="w-full">
+                Back to Quiz
+              </Button>
+            </Link>
+            <Link to="/login" className="w-full sm:w-auto">
+              <Button variant="primary" size="sm" className="w-full">
+                Sign in to Dashboard
+              </Button>
+            </Link>
+          </div>
         </Card>
       </div>
     );

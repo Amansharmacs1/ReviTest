@@ -506,15 +506,10 @@ export const QuizDetailsModal = ({ isOpen, onClose, quizId, onStatusChange }) =>
               <span className="text-xs font-bold text-navy">
                 Competition Rankings (Tied scores receive equal rank)
               </span>
-              <a
-                href={`${publicUrl}/leaderboard`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-brand-primary font-semibold hover:underline inline-flex items-center gap-1"
-              >
-                <span>Open Public Leaderboard View</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              <span className="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 border border-slate-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span>Private to Creator</span>
+              </span>
             </div>
 
             <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-xs">

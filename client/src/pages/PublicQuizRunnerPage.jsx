@@ -285,15 +285,11 @@ export const PublicQuizRunnerPage = () => {
           )}
 
           <div className="pt-2 flex flex-col gap-2">
-            {submissionResult?.publicLeaderboard && (
-              <Link to={`/quiz/${publicQuizId}/leaderboard`}>
-                <Button variant="primary" size="md" className="w-full" icon={Award}>
-                  View Live Leaderboard
-                </Button>
-              </Link>
-            )}
+            <p className="text-xs text-slate-500">
+              Your submission has been safely recorded.
+            </p>
             <p className="text-[11px] text-slate-400">
-              You can now safely close this window.
+              Leaderboard rankings and cohort results are private to the quiz creator. You can now safely close this window.
             </p>
           </div>
         </Card>

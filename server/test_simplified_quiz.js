@@ -128,7 +128,7 @@ async function runQuizVerificationSuite() {
         requireCollege: false,
         requireDepartment: true,
         allowMultipleAttempts: false,
-        publicLeaderboard: true,
+        publicLeaderboard: false,
         showResultsImmediately: true,
       },
     });
@@ -305,22 +305,28 @@ async function runQuizVerificationSuite() {
     // Leaves Q2 and Q3 unanswered or wrong
     await quizService.submitPublicQuiz(publicQuizId, student3Join.attemptId, student3Join.candidateId);
 
-    // Recalculate ranks & inspect leaderboard
-    await quizService.calculateLeaderboardRanks(quiz._id);
-    const pubLeaderboard = await quizService.getPublicLeaderboard(publicQuizId);
-    assert(pubLeaderboard.leaderboard.length === 3, 'Public leaderboard contains 3 participants');
+    // Verify public access to leaderboard is blocked
+    let publicLeaderboardBlocked = false;
+    try {
+      await quizService.getPublicLeaderboard(publicQuizId);
+    } catch (err) {
+      publicLeaderboardBlocked = true;
+      assert(err.message.includes('private'), `Public leaderboard blocked with message: "${err.message}"`);
+    }
+    assert(publicLeaderboardBlocked, 'Public leaderboard is blocked to public students');
 
-    const top1 = pubLeaderboard.leaderboard[0];
-    const top2 = pubLeaderboard.leaderboard[1];
-    const top3 = pubLeaderboard.leaderboard[2];
+    // Verify Quiz Creator CAN retrieve the complete leaderboard
+    const creatorLeaderboard = await quizService.getLeaderboard(quiz._id);
+    assert(creatorLeaderboard.length === 3, 'Quiz creator leaderboard contains 3 participants');
+
+    const top1 = creatorLeaderboard[0];
+    const top2 = creatorLeaderboard[1];
+    const top3 = creatorLeaderboard[2];
 
     assert(top1.rank === 1, `First participant rank is 1 (${top1.name})`);
     assert(top2.rank === 1, `Tied second participant rank is 1 (${top2.name})`);
     assert(top3.rank === 3, `Third participant rank is 3 (${top3.name}) - Standard 1, 1, 3 ranking`);
-
-    // Verify privacy: Public leaderboard must NOT expose emails or student IDs
-    assert(top1.email === undefined, 'Public leaderboard hides email');
-    assert(top1.rollNumber === undefined, 'Public leaderboard hides rollNumber');
+    assert(Boolean(top1.email), 'Creator leaderboard retains student email for instructor management');
 
     // =========================================================================
     // TEST GROUP 7: Stop Quiz & Active Attempt Auto-Close
