@@ -84,6 +84,9 @@ apiClient.interceptors.response.use(
     const errorResponse = {
       success: false,
       message:
+        (error.response?.data?.errors?.length
+          ? error.response.data.errors.map((e) => e.message).join('. ')
+          : null) ||
         error.response?.data?.message ||
         error.message ||
         'Unable to connect to REVITEST API server',

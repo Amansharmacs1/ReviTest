@@ -70,7 +70,13 @@ export const RegisterOrgPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await registerOrg(formData);
+      const cleanData = {
+        ...formData,
+        organizationSlug: slugify(formData.organizationSlug || formData.organizationName),
+        organizationCode: formData.organizationCode.trim().toUpperCase(),
+        adminEmail: formData.adminEmail.trim().toLowerCase(),
+      };
+      await registerOrg(cleanData);
       navigate('/app/dashboard');
     } catch {
       // Handled by store
@@ -148,7 +154,12 @@ export const RegisterOrgPage = () => {
                       required
                       placeholder="e.g. apex-institute"
                       value={formData.organizationSlug}
-                      onChange={handleChange}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          organizationSlug: slugify(e.target.value),
+                        })
+                      }
                       className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary transition-all placeholder:text-slate-400 font-mono text-xs"
                     />
                   </div>

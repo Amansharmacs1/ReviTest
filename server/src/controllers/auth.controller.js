@@ -60,8 +60,12 @@ export const registerOrganization = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check slug uniqueness
-  const slugClean = organizationSlug.trim().toLowerCase();
+  // Check slug uniqueness & format
+  const slugClean = organizationSlug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
   const codeClean = organizationCode.trim().toUpperCase();
 
   const existingOrg = await Organization.findOne({
