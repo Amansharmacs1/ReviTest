@@ -42,6 +42,7 @@ import {
   BarChart2,
   Key,
   FileQuestion,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { organizationService } from '../services/organizationService';
