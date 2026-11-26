@@ -41,11 +41,7 @@ async function runPhase6Tests() {
     // 0. Cleanup
     await Organization.deleteMany({ slug: /^phase6-test-/ });
     await User.deleteMany({ email: /^phase6-.*@test\.com$/ });
-    await ExamSchedule.deleteMany({ title: /^Phase6 / });
-    await ScheduleCandidate.deleteMany({});
-    await ExamAttempt.deleteMany({});
-    await AttemptResponse.deleteMany({});
-    await ExamSnapshot.deleteMany({});
+    await ExamSchedule.deleteMany({ title: /^Phase 6 / });
     await Exam.deleteMany({ title: /^Phase6 / });
     await Question.deleteMany({ statement: /^Phase6 / });
 
@@ -576,11 +572,7 @@ async function runPhase6Tests() {
     // Cleanup
     await Organization.deleteMany({ slug: /^phase6-test-/ });
     await User.deleteMany({ email: /^phase6-.*@test\.com$/ });
-    await ExamSchedule.deleteMany({ title: /^Phase6 / });
-    await ScheduleCandidate.deleteMany({});
-    await ExamAttempt.deleteMany({});
-    await AttemptResponse.deleteMany({});
-    await ExamSnapshot.deleteMany({});
+    await ExamSchedule.deleteMany({ title: /^Phase 6 / });
     await Exam.deleteMany({ title: /^Phase6 / });
     await Question.deleteMany({ statement: /^Phase6 / });
 

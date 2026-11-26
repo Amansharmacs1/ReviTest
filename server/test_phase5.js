@@ -33,9 +33,7 @@ async function runTests() {
     // Cleanup any existing test data
     await Organization.deleteMany({ slug: /^phase5-test-/ });
     await User.deleteMany({ email: /^phase5-.*@test\.com$/ });
-    await ExamSchedule.deleteMany({});
-    await ScheduleCandidate.deleteMany({});
-    await ExamSnapshot.deleteMany({});
+    await ExamSchedule.deleteMany({ title: /^Phase 5 / });
     await Exam.deleteMany({ title: /^Phase5 / });
     await Question.deleteMany({ statement: /^Phase5 / });
 
@@ -418,9 +416,7 @@ async function runTests() {
     // Clean up test data
     await Organization.deleteMany({ slug: /^phase5-test-/ });
     await User.deleteMany({ email: /^phase5-.*@test\.com$/ });
-    await ExamSchedule.deleteMany({});
-    await ScheduleCandidate.deleteMany({});
-    await ExamSnapshot.deleteMany({});
+    await ExamSchedule.deleteMany({ title: /^Phase 5 / });
     await Exam.deleteMany({ title: /^Phase5 / });
     await Question.deleteMany({ statement: /^Phase5 / });
 
