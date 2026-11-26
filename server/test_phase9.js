@@ -15,8 +15,9 @@ import { apiKeyService } from './src/services/apiKey.service.js';
 import { webhookService } from './src/services/webhook.service.js';
 import { exportService } from './src/services/export.service.js';
 import { ROLES } from './src/constants/roles.js';
+import { env } from './src/config/environment.js';
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/revitest';
+const MONGO_URI = env.mongodbUri;
 
 async function runPhase9Tests() {
   console.log('🧪 Starting Phase 9 Automated Integrations & SaaS Management Verification Suite...\n');

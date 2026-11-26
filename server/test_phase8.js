@@ -15,8 +15,9 @@ import {
 import { startOrResumeAttempt } from './src/services/attempt.service.js';
 import { evaluationService } from './src/services/evaluation.service.js';
 import { ROLES } from './src/constants/roles.js';
+import { env } from './src/config/environment.js';
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/revitest';
+const MONGO_URI = env.mongodbUri;
 
 async function runPhase8Tests() {
   console.log('🧪 Starting Phase 8 Automated Evaluation, Results & Analytics Verification Suite...\n');

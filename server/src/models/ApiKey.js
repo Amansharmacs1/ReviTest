@@ -60,6 +60,8 @@ const apiKeySchema = new Schema(
   }
 );
 
+apiKeySchema.index({ organizationId: 1, status: 1 });
+
 /**
  * Generate a new cryptographically secure API key pair:
  * returns { rawKey, keyPrefix, hashedKey }

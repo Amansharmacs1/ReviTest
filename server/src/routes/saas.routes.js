@@ -3,6 +3,7 @@ import { saasController } from '../controllers/saas.controller.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { authorize } from '../middleware/authorize.js';
 import { verifyOrganizationActive } from '../middleware/tenantActive.js';
+import { exportRateLimiter } from '../middleware/rateLimiter.js';
 import { ROLES } from '../constants/roles.js';
 
 const router = Router();
@@ -26,7 +27,11 @@ router.post('/webhooks', saasController.createWebhook);
 router.delete('/webhooks/:id', saasController.deleteWebhook);
 
 // 4. Data Exports
-router.get('/export/roster', saasController.exportRosterCsv);
-router.get('/export/schedule/:scheduleId/results', saasController.exportScheduleResultsCsv);
+router.get('/export/roster', exportRateLimiter, saasController.exportRosterCsv);
+router.get(
+  '/export/schedule/:scheduleId/results',
+  exportRateLimiter,
+  saasController.exportScheduleResultsCsv
+);
 
 export default router;

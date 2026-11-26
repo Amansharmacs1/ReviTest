@@ -263,6 +263,31 @@ The `AuditLog` collection records all critical workspace events:
 ### 12.4 Streaming Data Exports
 - High-efficiency CSV streaming for candidate rosters and cohort examination results with formula-injection sanitization.
 
+---
+
+## 13. Phase 10 Architecture: Performance, Security & Deployment
+
+### 13.1 Production Security Hardening & Helmet Policy
+- **HTTP Security Headers**: Strict Content-Security-Policy (CSP), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `X-DNS-Prefetch-Control: off`, and `Referrer-Policy: strict-origin-when-cross-origin`.
+- **CORS Defense**: Explicit allowed origin mapping with exposed headers (`X-Revitest-Signature`, `RateLimit-*`, `Content-Disposition`).
+- **NoSQL Injection & Prototype Pollution Sanitization**: Synchronous recursive middleware strips MongoDB operator keys (`$`, `.`) and prototype pollution vectors (`__proto__`, `constructor`, `prototype`).
+- **Layered Rate Limiting**: Dedicated rate limiting tiers for public routes (300 req/15min), sensitive authentication endpoints (30 req/15min), and bulk data exports (30 req/5min).
+
+### 13.2 Database Compound Indexing & Optimization
+- 14 registered Mongoose models audited with optimized compound indexes and unique constraints.
+- Partial unique indexing on `ExamAttempt` (`{ scheduleId: 1, candidateId: 1 }` filtered on `status: 'IN_PROGRESS'`) prevents race-condition duplicate attempts at the MongoDB storage engine level.
+- Live database index auditing exposed via `GET /api/health/indexes`.
+
+### 13.3 Observability & Production Health Telemetry
+- Diagnostic endpoints `GET /api/health` and `GET /api/health/db` provide real-time uptime telemetry, process memory profiling, CPU load stats, and database ping latency measurements.
+- Environment validation engine (`validateEnvironment()`) verifies required configuration and enforces production cryptographic secret entropy.
+
+### 13.4 Containerization & Production Orchestration
+- Multi-stage minimal Node 20 Alpine backend Docker container with `dumb-init` signal handling and non-root execution.
+- Multi-stage Vite frontend Docker container served via Nginx with gzip compression, caching headers, and SPA routing fallback.
+- Docker Compose orchestration (`docker-compose.yml` and `docker-compose.prod.yml`) with automated MongoDB health checks, resource limits, and Nginx reverse proxy gateway.
+
+
 
 
 

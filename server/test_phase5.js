@@ -8,8 +8,9 @@ import { ExamSchedule } from './src/models/ExamSchedule.js';
 import { ScheduleCandidate } from './src/models/ScheduleCandidate.js';
 import { AuditLog } from './src/models/AuditLog.js';
 import { checkCandidateEligibility } from './src/services/examEligibility.service.js';
+import { env } from './src/config/environment.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/revitest';
+const MONGODB_URI = env.mongodbUri;
 
 async function runTests() {
   console.log('🧪 Starting Phase 5 Automated Verification Suite...\n');

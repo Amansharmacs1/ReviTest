@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { env } from './config/environment.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
+import { sanitizeInput } from './middleware/sanitize.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import apiRoutes from './routes/index.js';
@@ -14,7 +15,21 @@ const app = express();
 // 1. Security Headers via Helmet
 app.use(
   helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        connectSrc: ["'self'", 'http:', 'https:'],
+      },
+    },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    xContentTypeOptions: true,
+    xDnsPrefetchControl: { allow: false },
   })
 );
 
@@ -52,6 +67,13 @@ app.use(
       'Accept',
       'Origin',
     ],
+    exposedHeaders: [
+      'X-Revitest-Signature',
+      'RateLimit-Limit',
+      'RateLimit-Remaining',
+      'RateLimit-Reset',
+      'Content-Disposition',
+    ],
   })
 );
 
@@ -67,7 +89,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser(env.cookie.secret));
 
-// 5. Global API Rate Limiting
+// 5. Input Sanitization (NoSQL injection and prototype pollution protection)
+app.use(sanitizeInput);
+
+// 6. Global API Rate Limiting
 app.use('/api', apiRateLimiter);
 
 // 6. Mount API Version 1 / Base routes

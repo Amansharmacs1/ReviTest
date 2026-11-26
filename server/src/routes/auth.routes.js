@@ -8,14 +8,15 @@ import {
   getCurrentUser,
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { authRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
-// Public Authentication Endpoints
-router.post('/register-org', registerOrganization);
-router.post('/register-candidate', registerCandidate);
-router.post('/login', login);
-router.post('/refresh', refreshSession);
+// Public Authentication Endpoints (Protected by Auth Rate Limiter)
+router.post('/register-org', authRateLimiter, registerOrganization);
+router.post('/register-candidate', authRateLimiter, registerCandidate);
+router.post('/login', authRateLimiter, login);
+router.post('/refresh', authRateLimiter, refreshSession);
 router.post('/logout', logout);
 
 // Protected Auth Profile Endpoint
