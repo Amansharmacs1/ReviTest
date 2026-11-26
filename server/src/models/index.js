@@ -12,3 +12,4 @@ export { ExamViolation, VIOLATION_TYPE, VIOLATION_SEVERITY } from './ExamViolati
 export { ExamResult, RESULT_STATUS } from './ExamResult.js';
 export { ApiKey, API_KEY_PERMISSIONS } from './ApiKey.js';
 export { WebhookSubscription, WEBHOOK_EVENTS } from './WebhookSubscription.js';
+export { QuizParticipant } from './QuizParticipant.js';

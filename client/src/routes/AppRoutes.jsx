@@ -8,12 +8,18 @@ import RegisterCandidatePage from '../pages/RegisterCandidatePage';
 import DashboardPage from '../pages/DashboardPage';
 import PlatformDashboardPage from '../pages/PlatformDashboardPage';
 import ExamRunnerPage from '../pages/ExamRunnerPage';
+import PublicQuizRunnerPage from '../pages/PublicQuizRunnerPage';
+import PublicLeaderboardPage from '../pages/PublicLeaderboardPage';
 import NotFoundPage from '../pages/NotFoundPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 
 export const AppRoutes = () => {
   return (
     <Routes>
+      {/* Public Student Quiz Route (No login required) */}
+      <Route path="quiz/:publicQuizId" element={<PublicQuizRunnerPage />} />
+      <Route path="quiz/:publicQuizId/leaderboard" element={<PublicLeaderboardPage />} />
+
       {/* Dedicated Distraction-Free Examination Runner */}
       <Route
         path="app/exam/:attemptId"

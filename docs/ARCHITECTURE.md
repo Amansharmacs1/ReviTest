@@ -287,8 +287,22 @@ The `AuditLog` collection records all critical workspace events:
 - Multi-stage Vite frontend Docker container served via Nginx with gzip compression, caching headers, and SPA routing fallback.
 - Docker Compose orchestration (`docker-compose.yml` and `docker-compose.prod.yml`) with automated MongoDB health checks, resource limits, and Nginx reverse proxy gateway.
 
+---
 
+## 14. Simplified Quiz Subsystem & Rapid Assessment Architecture
 
+### 14.1 Philosophy & Zero-Barrier Access
+To eliminate technical friction for faculty members and non-technical educators, the simplified quiz subsystem builds on REVITEST's robust foundational models (`Exam`, `ExamSnapshot`, `ExamSchedule`, `ExamAttempt`) without introducing code duplication:
+- **Zero-Barrier Public Joining**: Students access `/quiz/:publicQuizId` without requiring an account or login. The system transparently creates guest candidate credentials and assigns attempts.
+- **Proctoring Turned Off**: Tab switching, fullscreen locks, and copy-paste blocks are completely eliminated for standard quizzes.
+- **Answer Key Security**: Public metadata endpoints sanitize all question options, preventing any client-side answer key leakage.
 
+### 14.2 High-Speed Aggregation & Competition Ranking
+- **Model**: `QuizParticipant` stores lightweight denormalized records (`quizId`, `email`, `score`, `percentage`, `rank`, `timeTakenSeconds`, `googleSynced`).
+- **Standard Competition Ranking (1, 1, 3)**: Automatically calculates tied ranks for identical scores and breaks ties by time taken.
+- **Privacy Enforcement**: Public leaderboards expose only student names, ranks, scores, and time taken, omitting email addresses and institutional identifiers.
 
+### 14.3 One-Click Lifecycle & Third-Party Sync
+- **State Machine**: Transitions through `DRAFT` $\rightarrow$ `LIVE` $\rightarrow$ `STOPPED`. Stopping a quiz auto-submits all active in-progress attempts safely.
+- **Google Sheets & CSV**: Submissions can stream live to external webhooks (Google Apps Script / Zapier) and export as CSV with sanitization against CSV formula injection.
 

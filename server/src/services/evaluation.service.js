@@ -147,11 +147,13 @@ export const evaluationService = {
             case 'TRUE_FALSE': {
               const correctOption = q.options?.find((o) => o.isCorrect);
               const expectedText = correctOption?.text;
-              if (
-                expectedText &&
-                selectedOptions.length === 1 &&
-                selectedOptions[0].toLowerCase() === expectedText.toLowerCase()
-              ) {
+              const correctOptId = correctOption?.optionId || correctOption?.id;
+              const sel = selectedOptions?.[0];
+              const isMatch =
+                (correctOptId && sel === correctOptId) ||
+                (expectedText && typeof sel === 'string' && sel.toLowerCase() === expectedText.toLowerCase());
+
+              if (isMatch) {
                 isCorrect = true;
                 marksAwarded = qMarks;
                 evalStatus = 'CORRECT';

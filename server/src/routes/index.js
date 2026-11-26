@@ -11,6 +11,8 @@ import attemptRoutes from './attempt.routes.js';
 import proctorRoutes from './proctor.routes.js';
 import evaluationRoutes from './evaluation.routes.js';
 import saasRoutes from './saas.routes.js';
+import quizRoutes from './quiz.routes.js';
+import publicQuizRoutes from './publicQuiz.routes.js';
 
 const router = Router();
 
@@ -49,5 +51,9 @@ router.use('/evaluations', evaluationRoutes);
 
 // 12. Phase 9: Integrations & SaaS Management Routes
 router.use('/saas', saasRoutes);
+
+// 13. Simplified Core Quiz Routes
+router.use('/quizzes', quizRoutes);
+router.use('/public/quiz', publicQuizRoutes);
 
 export default router;

@@ -41,12 +41,14 @@ import {
   Radio,
   BarChart2,
   Key,
+  FileQuestion,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { organizationService } from '../services/organizationService';
 import { questionService } from '../services/questionService';
 import { examService } from '../services/examService';
 import { scheduleService } from '../services/scheduleService';
+import { quizService } from '../services/quizService';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
@@ -54,6 +56,12 @@ import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import Pagination from '../components/common/Pagination';
+
+// Simple Quiz Components
+import CreateQuizModal from '../components/quizzes/CreateQuizModal';
+import QuizDetailsModal from '../components/quizzes/QuizDetailsModal';
+import MyQuizzesTab from '../components/quizzes/MyQuizzesTab';
+import ParticipantsTab from '../components/quizzes/ParticipantsTab';
 
 // Phase 4 Assessment Components
 import QuestionEditorModal from '../components/questions/QuestionEditorModal';
@@ -79,8 +87,23 @@ export const DashboardPage = () => {
   const isOrgAdmin = user?.role === 'ORG_ADMIN' || user?.role === 'SUPER_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  // Active Tab
-  const [activeTab, setActiveTab] = useState('overview');
+  // Active Tab: 'dashboard', 'quizzes', 'participants', 'settings'
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Simplified Quiz State
+  const [quizStats, setQuizStats] = useState({
+    totalQuizzes: 0,
+    liveQuizzes: 0,
+    totalParticipants: 0,
+    totalSubmissions: 0,
+  });
+  const [recentQuizzes, setRecentQuizzes] = useState([]);
+  const [quizStatsLoading, setQuizStatsLoading] = useState(false);
+  const [createQuizOpen, setCreateQuizOpen] = useState(false);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [quizDetailsOpen, setQuizDetailsOpen] = useState(false);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [copiedQuizId, setCopiedQuizId] = useState(null);
 
   // Dashboard Stats & Activity
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -460,8 +483,27 @@ export const DashboardPage = () => {
     }
   }, [isOrgAdmin, loadCandidateExams]);
 
+  const loadQuizStats = useCallback(async () => {
+    try {
+      setQuizStatsLoading(true);
+      const res = await quizService.listQuizzes();
+      setRecentQuizzes((res.data?.quizzes || []).slice(0, 5));
+      if (res.data?.metrics) {
+        setQuizStats(res.data.metrics);
+      }
+    } catch (err) {
+      console.error('Error loading quiz stats:', err);
+    } finally {
+      setQuizStatsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (activeTab === 'overview') {
+    if (activeTab === 'dashboard') {
+      loadQuizStats();
+    } else if (activeTab === 'settings') {
+      loadProfile();
+    } else if (activeTab === 'overview') {
       loadDashboardStats();
     } else if (activeTab === 'exams') {
       loadExams();
@@ -480,6 +522,7 @@ export const DashboardPage = () => {
     }
   }, [
     activeTab,
+    loadQuizStats,
     loadDashboardStats,
     loadExams,
     loadSchedules,
@@ -869,26 +912,27 @@ export const DashboardPage = () => {
           <div className="border-b border-slate-200 overflow-x-auto">
             <nav className="flex space-x-6 min-w-max">
               {[
-                { id: 'overview', label: 'Workspace Overview', icon: Activity },
-                { id: 'exams', label: 'Examinations', icon: FileCheck },
-                { id: 'schedules', label: 'Exam Schedules', icon: Calendar },
-                { id: 'proctoring', label: 'Live Proctoring', icon: Radio },
-                { id: 'question-bank', label: 'Question Bank', icon: Database },
-                { id: 'members', label: 'All Members', icon: Users },
-                { id: 'proctors', label: 'Proctors', icon: ShieldAlert },
-                { id: 'candidates', label: 'Candidates', icon: GraduationCap },
-                { id: 'profile', label: 'Organization & Settings', icon: Settings },
-                { id: 'integrations', label: 'Integrations & API', icon: Key },
+                { id: 'dashboard', label: 'Dashboard', icon: Activity },
+                { id: 'quizzes', label: 'My Quizzes', icon: FileQuestion },
+                { id: 'create', label: 'Create Quiz', icon: Plus, isAction: true },
+                { id: 'participants', label: 'Participants', icon: Users },
+                { id: 'settings', label: 'Settings', icon: Settings },
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      if (tab.isAction) {
+                        setCreateQuizOpen(true);
+                      } else {
+                        setActiveTab(tab.id);
+                      }
+                    }}
                     className={`py-3 px-1 inline-flex items-center gap-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                       isActive
-                        ? 'border-brand-primary text-brand-primary'
+                        ? 'border-brand-primary text-brand-primary font-bold'
                         : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                     }`}
                   >
@@ -899,6 +943,218 @@ export const DashboardPage = () => {
               })}
             </nav>
           </div>
+
+          {/* SIMPLIFIED TAB 1: DASHBOARD OVERVIEW */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6 mt-6">
+              {/* Quick Action Hero Banner */}
+              <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-navy via-navy-800 to-navy-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-5 shadow-elevated">
+                <div className="space-y-2 max-w-xl">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-brand-electric text-xs font-bold border border-blue-400/20">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Instant Quiz Creator</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Create a quiz & share it with students in under 2 minutes
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300">
+                    No student sign-ups required. Students simply open your unique link on their mobile or laptop, enter their name, and take the quiz.
+                  </p>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => setCreateQuizOpen(true)}
+                  icon={Plus}
+                  className="font-bold shadow-lg shadow-brand-primary/30 shrink-0 self-start sm:self-auto py-3 px-6 text-sm"
+                >
+                  Create New Quiz
+                </Button>
+              </div>
+
+              {/* 4 Primary Metric Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <Card className="p-5 space-y-1.5 border-l-4 border-l-brand-primary bg-white shadow-xs">
+                  <div className="flex items-center justify-between text-slate-500 text-xs">
+                    <span>Total Quizzes</span>
+                    <FileQuestion className="w-4 h-4 text-brand-primary" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-navy">
+                    {quizStatsLoading ? '...' : quizStats.totalQuizzes}
+                  </div>
+                  <div className="text-[11px] text-slate-400">Created quizzes</div>
+                </Card>
+
+                <Card className="p-5 space-y-1.5 border-l-4 border-l-emerald-500 bg-white shadow-xs">
+                  <div className="flex items-center justify-between text-slate-500 text-xs">
+                    <span>Live Quizzes</span>
+                    <Play className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-600">
+                    {quizStatsLoading ? '...' : quizStats.liveQuizzes}
+                  </div>
+                  <div className="text-[11px] text-slate-400">Accepting student entries</div>
+                </Card>
+
+                <Card className="p-5 space-y-1.5 border-l-4 border-l-purple-500 bg-white shadow-xs">
+                  <div className="flex items-center justify-between text-slate-500 text-xs">
+                    <span>Total Participants</span>
+                    <Users className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-navy">
+                    {quizStatsLoading ? '...' : quizStats.totalParticipants}
+                  </div>
+                  <div className="text-[11px] text-slate-400">Students joined</div>
+                </Card>
+
+                <Card className="p-5 space-y-1.5 border-l-4 border-l-indigo-500 bg-white shadow-xs">
+                  <div className="flex items-center justify-between text-slate-500 text-xs">
+                    <span>Total Submissions</span>
+                    <Award className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-black text-navy">
+                    {quizStatsLoading ? '...' : quizStats.totalSubmissions}
+                  </div>
+                  <div className="text-[11px] text-slate-400">Completed attempts</div>
+                </Card>
+              </div>
+
+              {/* Recent Quizzes Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-navy flex items-center gap-2">
+                    <FileQuestion className="w-4 h-4 text-brand-primary" />
+                    <span>Recent Quizzes</span>
+                  </h3>
+                  <button
+                    onClick={() => setActiveTab('quizzes')}
+                    className="text-xs font-semibold text-brand-primary hover:underline"
+                  >
+                    View All Quizzes →
+                  </button>
+                </div>
+
+                <Card className="overflow-hidden bg-white shadow-xs border border-slate-200">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold">
+                        <tr>
+                          <th className="py-3 px-4">Quiz Title</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4">Questions & Duration</th>
+                          <th className="py-3 px-4">Submissions</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {quizStatsLoading ? (
+                          <tr>
+                            <td colSpan={5} className="py-8 text-center text-slate-400">
+                              Loading recent quizzes...
+                            </td>
+                          </tr>
+                        ) : recentQuizzes.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-10 text-center text-slate-400 space-y-2">
+                              <div>No quizzes created yet.</div>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setCreateQuizOpen(true)}
+                                icon={Plus}
+                              >
+                                Create Your First Quiz
+                              </Button>
+                            </td>
+                          </tr>
+                        ) : (
+                          recentQuizzes.map((quiz) => (
+                            <tr key={quiz._id} className="hover:bg-slate-50">
+                              <td className="py-3.5 px-4 font-bold text-navy">
+                                <span
+                                  className="cursor-pointer hover:text-brand-primary"
+                                  onClick={() => {
+                                    setSelectedQuizId(quiz._id);
+                                    setQuizDetailsOpen(true);
+                                  }}
+                                >
+                                  {quiz.title}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <Badge
+                                  variant={
+                                    quiz.quizStatus === 'LIVE'
+                                      ? 'success'
+                                      : quiz.quizStatus === 'STOPPED'
+                                      ? 'danger'
+                                      : 'warning'
+                                  }
+                                  size="sm"
+                                >
+                                  {quiz.quizStatus}
+                                </Badge>
+                              </td>
+                              <td className="py-3.5 px-4 text-slate-500">
+                                {quiz.totalQuestions} Questions • {quiz.durationMinutes} mins
+                              </td>
+                              <td className="py-3.5 px-4 font-mono font-bold text-navy">
+                                {quiz.completedSubmissions}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const fullUrl = `${window.location.origin}/quiz/${quiz.publicQuizId}`;
+                                      navigator.clipboard.writeText(fullUrl);
+                                      setCopiedQuizId(quiz.publicQuizId);
+                                      setTimeout(() => setCopiedQuizId(null), 2000);
+                                    }}
+                                    icon={copiedQuizId === quiz.publicQuizId ? Check : Copy}
+                                    className="text-xs"
+                                  >
+                                    {copiedQuizId === quiz.publicQuizId ? 'Copied' : 'Share'}
+                                  </Button>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedQuizId(quiz._id);
+                                      setQuizDetailsOpen(true);
+                                    }}
+                                    className="text-xs font-semibold"
+                                  >
+                                    Manage & Results
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* SIMPLIFIED TAB 2: MY QUIZZES */}
+          {activeTab === 'quizzes' && (
+            <MyQuizzesTab
+              onOpenCreate={() => setCreateQuizOpen(true)}
+              onSelectQuiz={(id) => {
+                setSelectedQuizId(id);
+                setQuizDetailsOpen(true);
+              }}
+            />
+          )}
+
+          {/* SIMPLIFIED TAB 3: PARTICIPANTS */}
+          {activeTab === 'participants' && <ParticipantsTab />}
 
           {/* TAB 1: WORKSPACE OVERVIEW */}
           {activeTab === 'overview' && (
@@ -2194,7 +2450,7 @@ export const DashboardPage = () => {
           )}
 
           {/* TAB 7: PROFILE & ORGANIZATION POLICIES */}
-          {activeTab === 'profile' && (
+          {(activeTab === 'profile' || activeTab === 'settings') && (
             <div className="space-y-6 mt-6">
               {profileLoading ? (
                 <div className="py-12 text-center text-xs text-slate-400">
@@ -2378,6 +2634,26 @@ export const DashboardPage = () => {
                   </div>
                 </form>
               ) : null}
+
+              {/* Optional Collapsible Advanced Developer Tools */}
+              <div className="pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="text-xs font-semibold text-slate-500 hover:text-navy flex items-center gap-1.5 p-2 rounded-lg bg-slate-100 hover:bg-slate-200"
+                >
+                  <span>
+                    {showAdvancedSettings ? '▲ Hide' : '▼ Show'} Advanced Developer Settings (API Keys & Quota Management)
+                  </span>
+                </button>
+
+                {showAdvancedSettings && (
+                  <div className="space-y-4 mt-4 pt-4 border-t border-slate-100">
+                    <UsageQuotaWidget />
+                    <IntegrationsSettingsTab />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -3013,6 +3289,31 @@ export const DashboardPage = () => {
           isOpen={Boolean(scorecardModalAttemptId)}
           onClose={() => setScorecardModalAttemptId(null)}
           attemptId={scorecardModalAttemptId}
+        />
+      )}
+
+      {/* 14. Simplified Quiz Wizard & Details Modals */}
+      {createQuizOpen && (
+        <CreateQuizModal
+          isOpen={createQuizOpen}
+          onClose={() => setCreateQuizOpen(false)}
+          onCreated={(created) => {
+            setSelectedQuizId(created.quiz._id);
+            setQuizDetailsOpen(true);
+            loadQuizStats();
+          }}
+        />
+      )}
+
+      {quizDetailsOpen && selectedQuizId && (
+        <QuizDetailsModal
+          isOpen={quizDetailsOpen}
+          onClose={() => {
+            setQuizDetailsOpen(false);
+            loadQuizStats();
+          }}
+          quizId={selectedQuizId}
+          onStatusChange={loadQuizStats}
         />
       )}
     </div>

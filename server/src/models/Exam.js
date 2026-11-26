@@ -197,6 +197,52 @@ const examSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
+    // Simple Quiz Integration Fields
+    isQuiz: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    publicQuizId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    quizStatus: {
+      type: String,
+      enum: ['DRAFT', 'LIVE', 'STOPPED', 'COMPLETED'],
+      default: 'DRAFT',
+      index: true,
+    },
+    quizSettings: {
+      requireCollege: { type: Boolean, default: false },
+      requireRollNumber: { type: Boolean, default: false },
+      requireDepartment: { type: Boolean, default: false },
+      allowMultipleAttempts: { type: Boolean, default: false },
+      publicLeaderboard: { type: Boolean, default: true },
+      showResultsImmediately: { type: Boolean, default: true },
+    },
+    googleSheet: {
+      spreadsheetId: { type: String, default: '' },
+      sheetName: { type: String, default: 'Quiz Results' },
+      lastSyncedAt: { type: Date, default: null },
+      syncStatus: {
+        type: String,
+        enum: ['IDLE', 'SYNCED', 'FAILED'],
+        default: 'IDLE',
+      },
+      syncError: { type: String, default: '' },
+      webhookUrl: { type: String, default: '' },
+    },
+    startedAt: {
+      type: Date,
+      default: null,
+    },
+    stoppedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
